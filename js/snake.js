@@ -1,25 +1,3 @@
-<!doctype html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Simple Snake Game</title>
-
-    <!-- Basic styling, centering of the canvas. -->
-    <style>
-        canvas {
-            display: block;
-            position: absolute;
-            border: 1px solid #000;
-            margin: auto;
-            top: 0;
-            bottom: 0;
-            right: 0;
-            left: 0;
-        }
-    </style>
-</head>
-<body>
-    <script>
 var
 /**
  * Constats
@@ -399,6 +377,3 @@ function draw() {
 }
 // start and run the game
 main();
-    </script>
-</body>
-</html>
