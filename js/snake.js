@@ -28,7 +28,12 @@ ctx,	  /* CanvasRenderingContext2d */
 keystate, /* Object, used for keyboard inputs */
 frames,   /* number, used for animation */
 score2,
-score;	  /* number, keep track of the player score */
+score,	  /* number, keep track of the player score */
+
+player1, 
+player2, /* string, player IDs */
+
+server; /* type: FancyWebSocket */
 
 /**
  * Grid datastructor, usefull in games where the game world is
@@ -371,9 +376,25 @@ function draw() {
 	// changes the fillstyle once more and draws the score
 	// message to the canvas
 	ctx.fillStyle = "#000";
-	ctx.fillText("PLAYER1 SCORE: " + score, 10, canvas.height - 10);
-	ctx.fillText("PLAYER 2 SCORE: " + score2, 180, canvas.height - 10);
+	ctx.fillText(player1 + " score: " + score, 10, canvas.height - 10);
+	ctx.fillText(player2 + " score: " + score2, 180, canvas.height - 10);
 
 }
-// start and run the game
-main();
+
+// Connect to server and prepare to start game
+function connectServer() {
+    // Grab data and hide the settings form
+    var serverIP = document.getElementById("server-ip").value;
+    var port = document.getElementById("port").value;
+    player1 = document.getElementById("player1").value;
+    player2 = document.getElementById("player2").value;
+    document.getElementById("settings-form").style.display = "none";
+
+    // Open a server connection
+    // server = new FancyWebSocket('ws://' + serverIP + ':' + port);
+    // Do stuff here: send the user ids, confirm that we're good to play, etc.
+    // Alert user and abort if the connection is refused or other failure occurs here
+    
+    // Otherwise.. start the game play
+    main();
+}
