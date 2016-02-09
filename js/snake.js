@@ -34,6 +34,9 @@ temp,
 player1, 
 player2, /* string, player IDs */
 
+serverIP, /* number */
+port,
+
 server; /* type: FancyWebSocket */
 
 /**
@@ -394,21 +397,28 @@ function draw() {
 	// message to the canvas
 	ctx.fillStyle = "#000";
 	ctx.fillText(temp, 10, canvas.height - 10);
-	//ctx.fillText(player1 + " score: " + score, 10, canvas.height - 10);
-	//ctx.fillText(player2 + " score: " + score2, 180, canvas.height - 10);
+	ctx.fillText(player1 + " score: " + score, 10, canvas.height - 10);
+	ctx.fillText(player2 + " score: " + score2, 180, canvas.height - 10);
 
 }
 
 
 // Connect to server and prepare to start game
-function connectServer() {
-    // Grab data and hide the settings form
-    var serverIP = document.getElementById("server-ip").value;
-    var port = document.getElementById("port").value;
-    player1 = document.getElementById("player1").value;
-    player2 = document.getElementById("player2").value;
-    document.getElementById("settings-form").style.display = "none";
+function connectServer(useFormInput) {
 
+    // Retrieve settings from form, if applicable
+    // Otherwise, we'll keep the settings we already have
+    if (useFormInput) {
+        serverIP = $("#server-ip").val();
+        port = $("#port").val();
+        player1 = $("#player1").val();
+        player2 = $("#player2").val();
+     }
+      
+    // Make sure settings and endgame screen are hidden
+    $("#settings-form").hide();
+    $("#game-over").hide();
+    
     // Open a server connection
     server = new FancyWebSocket('ws://'+ serverIP + ':' + port);
     
@@ -422,8 +432,8 @@ function connectServer() {
 
 // Game over
 function endGame() {
-    // Hide game canvas
-    canvas.style.display = "none";
+    // Remove the old game canvas from the DOM (a new one is generated each time)
+    $(canvas).remove();
     
     // Display endgame message
     var msg;
@@ -438,13 +448,23 @@ function endGame() {
         msg = "" + player2 + " won the game.";
     }
 
-    document.getElementById("game-over-msg").innerHTML = msg;
-    document.getElementById("game-over").style.display = "block";
+    $("#game-over-msg").innerHTML = msg;
+    $("#game-over").show();
     
     // Tie up & close the server connection
     // ...
     // ...
     // ...
-    // ...
-    
+    // ...   
 }
+
+// Set event handlers
+$(document).ready(function() {
+    $("#submit").click(function() {
+        connectServer(true);
+    });
+    
+    $("#restart-btn").click(function() {
+       connectServer(false); 
+    });
+});

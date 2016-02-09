@@ -3,39 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>ICS 167 Snake Game</title>
-        <script src="js/fancywebsocket.js"></script>    
-    <script src="js/snake.js"></script>
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
-
-    <!-- Basic styling, centering of the canvas. -->
-    <style>
-        canvas {
-            display: block;
-            position: absolute;
-            border: 1px solid #000;
-            margin: auto;
-            top: 0;
-            bottom: 0;
-            right: 0;
-            left: 0;
-        }
-        
-        form {
-            margin: 10em auto 10em auto;
-            display: table;
-        }
-        
-        form input, form button  {
-            display: block;
-            margin: 0 0 1em 0;
-        }
-        
-        #game-over {
-            display: none;
-            text-align: center;
-            margin: 10em auto 10em auto;
-        }
-    </style>
+    <link rel="stylesheet" type="text/css" href="css/styles.css">
 </head>
 
 <body>
@@ -52,14 +20,17 @@
         <label for="port">Port</label>        
         <input type="text" name="port" id="port">
         
-        <input type="button" id="submit" onclick="connectServer()" value="Connect and Play">
+        <input type="button" id="submit" value="Connect and Play">
     </form>
     
     <div id="game-over">
         <h1>Game over!</h1>
         <p id="game-over-msg"></p>
+        <input type="button" id="restart-btn" value="Play again">
     </div>
 
-    
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>    
+    <script src="js/fancywebsocket.js"></script>    
+    <script src="js/snake.js"></script>
 </body>
 </html>

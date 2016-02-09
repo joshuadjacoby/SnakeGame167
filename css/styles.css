@@ -1,0 +1,26 @@
+canvas {
+    display: block;
+    position: absolute;
+    border: 1px solid #000;
+    margin: auto;
+    top: 0;
+    bottom: 0;
+    right: 0;
+    left: 0;
+}
+
+form {
+    margin: 10em auto 10em auto;
+    display: table;
+}
+
+form input, form button  {
+    display: block;
+    margin: 0 0 1em 0;
+}
+
+#game-over {
+    display: none;
+    text-align: center;
+    margin: 10em auto 10em auto;
+}
