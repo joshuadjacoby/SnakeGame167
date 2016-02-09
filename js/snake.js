@@ -29,6 +29,7 @@ keystate, /* Object, used for keyboard inputs */
 frames,   /* number, used for animation */
 score2,
 score,	  /* number, keep track of the player score */
+temp,
 
 player1, 
 player2, /* string, player IDs */
@@ -165,6 +166,15 @@ snake2 = {
         return this._queue.pop();
     }
 };
+
+function log(text) {
+    $log = $('#log');
+    //Add text to log
+    $log.append(($log.val() ? "\n" : '') + text);
+    temp = $log;
+}
+
+
 /**
  * Set a food id at a random free cell in the grid
  */
@@ -214,6 +224,7 @@ function main() {
 function init() {
     score = 0;
     score2 = 0;
+    temp = ' ';
 	grid.init(EMPTY, COLS, ROWS);
 	var sp = { x: Math.floor(COLS / 2), y: ROWS - 1 };
 	var sp2 = { x: Math.floor(COLS / 2), y: 0 };
@@ -266,8 +277,8 @@ function update() {
 	    snake2.direction = DOWN;
 	}
 
-	// each fifteen frames update the game state.
-	if (frames%15 === 0) {
+	// each  frames update the game state.
+	if (frames%7 === 0) {
 		// pop the last element from the snake queue i.e. the
 		// head
 		var nx = snake.last.x;
@@ -316,7 +327,10 @@ function update() {
 		// check wheter the new position are on the fruit item
 		if (grid.get(nx, ny) === FRUIT) {
 			// increment the score and sets a new fruit position
-			score++;
+		    server.send('message','p1score');
+		    server.bind('message', function (data) {
+		        log(data);
+		    });
 			setFood();
 		} else {
 			// take out the first item from the snake queue i.e
@@ -327,7 +341,10 @@ function update() {
 
 		if (grid.get(nx2, ny2) === FRUIT) {
 		    // increment the score and sets a new fruit position
-		    score2++;
+		    server.send('message','p2score');
+		    server.bind('message', function (data) {
+		        log(data);
+		    });
 		    setFood();
 		} else {
 		    // take out the first item from the snake queue i.e
@@ -376,10 +393,12 @@ function draw() {
 	// changes the fillstyle once more and draws the score
 	// message to the canvas
 	ctx.fillStyle = "#000";
-	ctx.fillText(player1 + " score: " + score, 10, canvas.height - 10);
-	ctx.fillText(player2 + " score: " + score2, 180, canvas.height - 10);
+	ctx.fillText(temp, 10, canvas.height - 10);
+	//ctx.fillText(player1 + " score: " + score, 10, canvas.height - 10);
+	//ctx.fillText(player2 + " score: " + score2, 180, canvas.height - 10);
 
 }
+
 
 // Connect to server and prepare to start game
 function connectServer() {
@@ -391,7 +410,9 @@ function connectServer() {
     document.getElementById("settings-form").style.display = "none";
 
     // Open a server connection
-    // server = new FancyWebSocket('ws://' + serverIP + ':' + port);
+    server = new FancyWebSocket('ws://'+ serverIP + ':' + port);
+    
+    server.connect();
     // Do stuff here: send the user ids, confirm that we're good to play, etc.
     // Alert user and abort if the connection is refused or other failure occurs here
     
