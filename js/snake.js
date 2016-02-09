@@ -266,8 +266,8 @@ function update() {
 	    snake2.direction = DOWN;
 	}
 
-	// each five frames update the game state.
-	if (frames%5 === 0) {
+	// each fifteen frames update the game state.
+	if (frames%15 === 0) {
 		// pop the last element from the snake queue i.e. the
 		// head
 		var nx = snake.last.x;
@@ -311,7 +311,7 @@ function update() {
 			0 > ny2 || ny2 > grid.height - 1 || grid.get(nx2, ny2) === SNAKE2 || grid.get(nx, ny) === SNAKE2 ||
 			grid.get(nx2, ny2) === SNAKE
 		) {
-			return init();
+			endGame();
 		}
 		// check wheter the new position are on the fruit item
 		if (grid.get(nx, ny) === FRUIT) {
@@ -397,4 +397,33 @@ function connectServer() {
     
     // Otherwise.. start the game play
     main();
+}
+
+// Game over
+function endGame() {
+    // Hide game canvas
+    canvas.style.display = "none";
+    
+    // Display endgame message
+    var msg;
+
+    if (score == score2) {
+        msg = "The game was a " + score + "-" + score2 + " tie.";
+    }
+    else if (score > score2) {
+        msg = "" + player1 + " won the game.";
+    }
+    else {
+        msg = "" + player2 + " won the game.";
+    }
+
+    document.getElementById("game-over-msg").innerHTML = msg;
+    document.getElementById("game-over").style.display = "block";
+    
+    // Tie up & close the server connection
+    // ...
+    // ...
+    // ...
+    // ...
+    
 }
