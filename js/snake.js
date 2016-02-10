@@ -485,6 +485,7 @@ function endGame() {
 
     $("#game-over-msg").html(msg);
     $("#game-over").show();
+    document.getElementById("restart-btn").focus();
     
     // Tie up & close the server connection
     // ...
@@ -495,7 +496,7 @@ function endGame() {
 }
 
 // Set click event handlers
-$(document).ready(function() {
+$(document).ready(function(e) {
     $("#submit").click(function() {
         connectServer();
     });
@@ -503,4 +504,10 @@ $(document).ready(function() {
     $("#restart-btn").click(function() {
        location.reload();
     });
+});
+
+$(document).keypress(function(e) {
+    if(e.which == 13 && document.activeElement.tagName == "INPUT") {
+        connectServer();
+    }
 });
