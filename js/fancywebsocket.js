@@ -25,7 +25,6 @@ var FancyWebSocket = function (url) {
             dispatch('message', evt.data);
         };
 
-
         this.conn.onclose = function () { dispatch('close', null) }
         this.conn.onopen = function () { dispatch('open', null) }
     };
