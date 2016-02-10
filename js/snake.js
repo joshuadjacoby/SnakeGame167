@@ -331,9 +331,6 @@ function update() {
 		if (grid.get(nx, ny) === FRUIT) {
 			// increment the score and sets a new fruit position
 		    server.send('message','p1score');
-		    server.bind('message', function (data) {
-		        log(data);
-		    });
 			setFood();
 		} else {
 			// take out the first item from the snake queue i.e
@@ -345,9 +342,6 @@ function update() {
 		if (grid.get(nx2, ny2) === FRUIT) {
 		    // increment the score and sets a new fruit position
 		    server.send('message','p2score');
-		    server.bind('message', function (data) {
-		        log(data);
-		    });
 		    setFood();
 		} else {
 		    // take out the first item from the snake queue i.e
@@ -404,30 +398,61 @@ function draw() {
 
 
 // Connect to server and prepare to start game
-function connectServer(useFormInput) {
+function connectServer() {
 
-    // Retrieve settings from form, if applicable
-    // Otherwise, we'll keep the settings we already have
-    if (useFormInput) {
-        serverIP = $("#server-ip").val();
-        port = $("#port").val();
-        player1 = $("#player1").val();
-        player2 = $("#player2").val();
-     }
+    serverIP = $("#server-ip").val();
+    port = $("#port").val();
+    player1 = $("#player1").val();
+    player2 = $("#player2").val();
       
     // Make sure settings and endgame screen are hidden
     $("#settings-form").hide();
     $("#game-over").hide();
     
-    // Open a server connection
+    // Create a new socket
     server = new FancyWebSocket('ws://'+ serverIP + ':' + port);
     
-    server.connect();
-    // Do stuff here: send the user ids, confirm that we're good to play, etc.
-    // Alert user and abort if the connection is refused or other failure occurs here
+    /*
+     * BIND CALLBACKS FOR SOCKET EVENTS -- 3 BINDINGS:
+     */
     
-    // Otherwise.. start the game play
-    main();
+	// (1) Open event -- We're connected!
+	server.bind('open', function() {
+        
+        // Send player IDs to server. Hopefully, server will
+        // be expecting to receive these two messages in this order.
+        server.send(player1);
+        server.send(player2);
+        
+        // Does anything else need to be sent?
+        // ...
+        
+        // We're ready -- start the game
+        main();
+	});
+
+	// (2) Disconnection event
+	server.bind('close', function( data ) {
+        alert("Server connection closed.");
+        // Stop the game, if it's running?
+        // ...
+        // ...
+        // ...
+	});
+
+	// (3) Message event -- message received from server
+	server.bind('message', function( payload ) {
+		// Do something with the payload
+		alert("Message received from server: " + payload);
+		// ...
+		// ...
+		// ...
+		// ...
+	});
+
+    
+    // Connect   
+    server.connect();
 }
 
 // Game over
@@ -448,23 +473,24 @@ function endGame() {
         msg = "" + player2 + " won the game.";
     }
 
-    $("#game-over-msg").innerHTML = msg;
+    $("#game-over-msg").html(msg);
     $("#game-over").show();
     
     // Tie up & close the server connection
     // ...
-    // ...
+    // (Send any messages that need to be sent...)
     // ...
     // ...   
+    server.disconnect();
 }
 
-// Set event handlers
+// Set click event handlers
 $(document).ready(function() {
     $("#submit").click(function() {
-        connectServer(true);
+        connectServer();
     });
     
     $("#restart-btn").click(function() {
-       connectServer(false); 
+       location.reload();
     });
 });
