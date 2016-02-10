@@ -423,8 +423,8 @@ function connectServer() {
         
         // Send player IDs to server. Hopefully, server will
         // be expecting to receive these two messages in this order.
-        server.send(player1);
-        server.send(player2);
+        server.send('message', player1);
+        server.send('message', player2);
         
         // Does anything else need to be sent?
         // ...
