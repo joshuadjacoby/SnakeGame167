@@ -477,10 +477,10 @@ function endGame() {
         msg = "The game was a " + score + "-" + score2 + " tie.";
     }
     else if (score > score2) {
-        msg = "" + player1 + " won the game.";
+        msg = "" + player1 + " won the game, " + score + "-" + score2;
     }
     else {
-        msg = "" + player2 + " won the game.";
+        msg = "" + player2 + " won the game, " + score2 + "-" + score;
     }
 
     $("#game-over-msg").html(msg);
