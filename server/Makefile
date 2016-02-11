@@ -3,7 +3,7 @@ CFLAGS = -c
 LDFLAGS =
 SOURCES = main.cpp websocket.cpp sha1.cpp base64.cpp
 OBJECTS = $(SOURCES:.cpp=.o)
-EXECUTABLE = chatroom
+EXECUTABLE = snake-server
 
 all: $(SOURCES) $(EXECUTABLE)
 	

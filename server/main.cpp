@@ -16,10 +16,18 @@ string player2_name;
 
 /* called when a client connects */
 void openHandler(int clientID){
-	player_scores[0] = 0;
+    // If we have few enough connections, accept it. Otherwise, reject.
+    if (server.getClientIDs().size() < 2) {
+        player_scores[0] = 0;
 	player_scores[1] = 0;
 	player1_name = " ";
 	player2_name = " ";
+        server.wsSend(clientID, "CONNECTION_READY", false); // Send ok msg
+    }
+    else {
+        server.wsSend(clientID, "CONNECTION_REJECTED", false); // Send rejected msg
+        server.wsClose(clientID);
+    }
 
 }
 
