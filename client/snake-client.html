@@ -7,6 +7,9 @@
 </head>
 
 <body>
+
+    <h4 id="connection-status">No server connection</h4>
+
     <form id="settings-form">
         <label for="player1">First player</label>        
         <input type="text" name="player1" id="player1" value="player1">
@@ -23,11 +26,12 @@
         <input type="button" id="submit" value="Connect and Play">
     </form>
     
-    <div id="game-over">
-        <h1>Game over!</h1>
-        <p id="game-over-msg"></p>
-        <input type="button" id="restart-btn" value="Play again">
-    </div>
+    <div id="msg-panel">
+        <h1 id="msg-headline"></h1>
+        <p id="msg-body"></p>
+        <input type="button" id="restart-btn" value="Play again"/>        
+    </div>    
+        
 
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>    
     <script src="js/fancywebsocket.js"></script>    

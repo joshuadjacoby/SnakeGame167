@@ -281,7 +281,7 @@ function update() {
 	}
 
 	// each  frames update the game state.
-	if (frames%7 === 0) {
+	if (frames%30 === 0) {
 		// pop the last element from the snake queue i.e. the
 		// head
 		var nx = snake.last.x;
@@ -402,14 +402,14 @@ function draw() {
 // Connect to server and prepare to start game
 function connectServer() {
 
+    // Initialize variables
     serverIP = $("#server-ip").val();
     port = $("#port").val();
     player1 = $("#player1").val();
     player2 = $("#player2").val();
       
-    // Make sure settings and endgame screen are hidden
-    $("#settings-form").hide();
-    $("#game-over").hide();
+    // Hide the message panel
+    $("#msg-panel").hide();
     
     // Create a new socket
     server = new FancyWebSocket('ws://'+ serverIP + ':' + port);
@@ -420,37 +420,37 @@ function connectServer() {
     
 	// (1) Open event -- We're connected!
 	server.bind('open', function() {
-        
-        // Send player IDs to server. Hopefully, server will
-        // be expecting to receive these two messages in this order.
-        server.send('message', player1);
-        server.send('message', player2);
-        
-        // Does anything else need to be sent?
-        // ...
-        
-        // We're ready -- start the game
-        main();
+        // Don't start the game yet -- we're going to wait to receive a "connection ready" message from the server
+        // This prevents us from launching the game too soon, because the server might need to 
+        // disconnect us if too many players are connected already 
 	});
 
 	// (2) Disconnection event
 	server.bind('close', function( data ) {
-        alert("Server connection closed.");
+        showConnectionStatus(false); // Update the notification strip
         // Stop the game, if it's running?
-        // ...
         // ...
         // ...
 	});
 
 	// (3) Message event -- message received from server
 	server.bind('message', function( payload ) {
-		// Do something with the payload
-		//alert("Message received from server: " + payload);
-		// ...
-		// ...
-		// ...
-		// ...
-	});
+        
+        // Connection ready message: let's start playing the game
+        if (payload == "CONNECTION_READY") {
+            server.send('message', player1);  // Send player id to server
+            server.send('message', player2);  // ""
+            showConnectionStatus(true); // Update the notification strip          
+            main(); // start the game 
+        }
+        
+        // Connection rejected message: let's display the message panel
+        // to inform the user
+        if (payload == "CONNECTION_REJECTED") {
+            showMessagePanel("Connection rejected by server", "Please try again later", "Try again");
+            document.getElementById("restart-btn").focus();    
+        }
+ 	});
 
 	server.bind('player1scored', function (payload) {
 	    score = payload;
@@ -459,18 +459,14 @@ function connectServer() {
 	server.bind('player2scored', function (payload) {
 	    score2 = payload;
 	});
-
     
-    // Connect   
+    // Try to connect...   
     server.connect();
 }
 
 // Game over
 function endGame() {
-    // Remove the old game canvas from the DOM (a new one is generated each time)
-    $(canvas).remove();
-    
-    // Display endgame message
+    // Show the endgame message
     var msg;
 
     if (score == score2) {
@@ -483,20 +479,40 @@ function endGame() {
         msg = "" + player2 + " won the game, " + score2 + "-" + score;
     }
 
-    $("#game-over-msg").html(msg);
-    $("#game-over").show();
-    document.getElementById("restart-btn").focus();
+    showMessagePanel("Game over", msg, "Play again");
     
-    // Tie up & close the server connection
-    // ...
-    // (Send any messages that need to be sent...)
-    // ...
-    // ...   
+    // Disconnect from server
     server.disconnect();
+}
+
+
+// Shows the message screen with the given contents
+function showMessagePanel(headline, body, buttonText) {
+    $("#msg-headline").html(headline); // Set the H1 text
+    $("#msg-body").html(body); // Set the p text
+    $("#restart-btn").val(buttonText); // Set the restart button text
+
+    $(canvas).remove(); // Delete the game canvas, if we have one
+    $("form").hide(); // Hide the settings form
+    
+    $("#msg-panel").show(); // Show the message panel
+}
+
+// Show the current connection status
+function showConnectionStatus(isConnected) {
+    if (isConnected) {
+        $("#connection-status").css("background-color", "green"); 
+        $("#connection-status").html("Connected!");
+    }
+    else {
+        $("#connection-status").css("background-color", "red"); 
+        $("#connection-status").html("No server connection");        
+    }
 }
 
 // Set click event handlers
 $(document).ready(function(e) {
+
     $("#submit").click(function() {
         connectServer();
     });

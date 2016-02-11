@@ -1,0 +1,36 @@
+#connection-status {
+    background-color: red;
+    color: white;
+    text-align: center;
+    font-family: sans-serif;
+    font-weight: 400;
+    height: 20px;
+    margin-top: 0;
+}
+
+canvas {
+    display: block;
+    border: 1px solid #000;
+    margin: auto;
+    position: absolute;
+    top: 30px;
+    bottom: 0;
+    right: 0;
+    left: 0;
+}
+
+form {
+    margin: 5em auto 5em auto;
+    display: table;
+}
+
+form input, form button  {
+    display: block;
+    margin: 0 0 1em 0;
+}
+
+#msg-panel {
+    display: none; /* Hide at start */
+    text-align: center;
+    margin: 5em auto 5em auto;
+}
