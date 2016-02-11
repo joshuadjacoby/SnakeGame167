@@ -1,3 +1,6 @@
+//Joshua Jacoby
+//Steven Ratcliff
+//Jonathan Saavedra
 var
 /**
  * Constats
@@ -281,7 +284,7 @@ function update() {
 	}
 
 	// each  frames update the game state.
-	if (frames%30 === 0) {
+	if (frames%7 === 0) {
 		// pop the last element from the snake queue i.e. the
 		// head
 		var nx = snake.last.x;
@@ -410,6 +413,7 @@ function connectServer() {
       
     // Hide the message panel
     $("#msg-panel").hide();
+    $("form").hide();
     
     // Create a new socket
     server = new FancyWebSocket('ws://'+ serverIP + ':' + port);

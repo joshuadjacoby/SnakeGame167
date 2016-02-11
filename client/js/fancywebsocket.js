@@ -1,4 +1,7 @@
-var FancyWebSocket = function(url)
+//Joshua Jacoby
+//Steven Ratcliff
+//Jonathan Saavedra
+var FancyWebSocket = function (url)
 {
 	var callbacks = {};
 	var ws_url = url;

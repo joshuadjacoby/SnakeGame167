@@ -1,3 +1,6 @@
+//Joshua Jacoby
+//Steven Ratcliff
+//Jonathan Saavedra
 #include <stdlib.h>
 #include <iostream>
 #include <string>
@@ -54,7 +57,7 @@ void messageHandler(int clientID, string message){
 
 	if (message == "p1score") {
 		player_scores[0]++;
-		os << player_scores[1];
+		os << player_scores[0];
 
 	}
 	else {
