@@ -14,23 +14,30 @@ webSocket server;
 int player_scores[2];
 string player1_name;
 string player2_name;
+string player1Move = "3";
+string player2Move = "3";
 
 
 
 /* called when a client connects */
 void openHandler(int clientID){
     // If we have few enough connections, accept it. Otherwise, reject.
-    if (server.getClientIDs().size() < 2) {
+	cout << clientID << endl;
+    if (server.getClientIDs().size() == 2) {
         player_scores[0] = 0;
 	player_scores[1] = 0;
 	player1_name = " ";
 	player2_name = " ";
-        server.wsSend(clientID, "CONNECTION_READY", false); // Send ok msg
+	vector<int> clientIDs = server.getClientIDs();
+	for (int i = 0; i < clientIDs.size(); i++)
+		server.wsSend(clientIDs[i], "CONNECTION_READY", false);
     }
     else {
-        server.wsSend(clientID, "CONNECTION_REJECTED", false); // Send rejected msg
+       /* server.wsSend(clientID, "CONNECTION_REJECTED", false); // Send rejected msg
         server.wsClose(clientID);
+		*/
     }
+	cout << clientID << endl;
 
 }
 
@@ -49,6 +56,7 @@ void closeHandler(int clientID){
 /* called when a client sends a message to the server */
 void messageHandler(int clientID, string message){
     ostringstream os;
+	
 
 	if (message == "p2score") {
 		player_scores[1]++;
@@ -60,8 +68,33 @@ void messageHandler(int clientID, string message){
 		os << player_scores[0];
 
 	}
+
+	if (message == "0") {
+		if (clientID == 0)
+			player1Move = "2";
+		else { player2Move = "2"; }
+	}
+
+	if (message == "1") {
+		if (clientID == 0)
+			player1Move = "3";
+		else { player2Move = "3"; }
+	}
+
+	if (message == "2") {
+		if (clientID == 0)
+			player1Move = "0";
+		else { player2Move = "0"; }
+	}
+
+	if (message == "3") {
+		if (clientID == 0)
+			player1Move = "1";
+		else { player2Move = "1"; }
+	}
+
 	else {
-		if (player1_name == " ")
+		if (clientID == 0)
 			player1_name = message;
 		else {
 			player2_name = message;
@@ -75,6 +108,9 @@ void messageHandler(int clientID, string message){
         if (clientIDs[i] == clientID)
             server.wsSend(clientIDs[i], os.str());
     }
+	if (clientID == 0)
+		server.wsSend(clientID, player2Move);
+	else { server.wsSend(clientID, player1Move); }
 }
 
 /* called once per select() loop */
