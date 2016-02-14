@@ -37,6 +37,7 @@ temp,
 player1, 
 player2, /* string, player IDs */
 
+
 serverIP, /* number */
 port,
 
@@ -269,7 +270,7 @@ function update() {
 	if (keystate[KEY_DOWN] && snake.direction !== UP) {
 		snake.direction = DOWN;
 	}
-
+/*
 	if (keystate[KEY_A] && snake2.direction !== RIGHT) {
 	    snake2.direction = LEFT;
 	}
@@ -282,9 +283,12 @@ function update() {
 	if (keystate[KEY_S] && snake2.direction !== UP) {
 	    snake2.direction = DOWN;
 	}
+    */
+    // each  frames update the game state.
+	server.change('p1move');
+	server.send('p1move', snake.direction);
 
-	// each  frames update the game state.
-	if (frames%7 === 0) {
+	if (frames%20 === 0) {
 		// pop the last element from the snake queue i.e. the
 		// head
 		var nx = snake.last.x;
@@ -462,6 +466,10 @@ function connectServer() {
 
 	server.bind('player2scored', function (payload) {
 	    score2 = payload;
+	});
+
+	server.bind('p1move', function (payload) {
+	    snake2.direction = parseInt(payload, 10);
 	});
     
     // Try to connect...   
