@@ -229,6 +229,8 @@ function main() {
  * Resets and inits game objects
  */
 function init() {
+    server.change('namerequest');
+    server.send('namerequest', 'namerequest');
     score = 0;
     score2 = 0;
     temp = ' ';
@@ -413,7 +415,6 @@ function connectServer() {
     serverIP = $("#server-ip").val();
     port = $("#port").val();
     player1 = $("#player1").val();
-    player2 = $("#player2").val();
       
     // Hide the message panel
     $("#msg-panel").hide();
@@ -471,6 +472,10 @@ function connectServer() {
 	server.bind('p1move', function (payload) {
 	    snake2.direction = parseInt(payload, 10);
 	});
+
+	server.bind('namerequest', function (payload) {
+	    player2 = payload;
+	})
     
     // Try to connect...   
     server.connect();
