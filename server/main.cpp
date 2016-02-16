@@ -22,22 +22,19 @@ string player2Move = "3";
 /* called when a client connects */
 void openHandler(int clientID){
     // If we have few enough connections, accept it. Otherwise, reject.
-	cout << clientID << endl;
     if (server.getClientIDs().size() == 2) {
         player_scores[0] = 0;
-	player_scores[1] = 0;
-	player1_name = " ";
-	player2_name = " ";
-	vector<int> clientIDs = server.getClientIDs();
-	for (int i = 0; i < clientIDs.size(); i++)
-		server.wsSend(clientIDs[i], "CONNECTION_READY", false);
+		player_scores[1] = 0;
+		player1_name = " ";
+		player2_name = " ";
+		vector<int> clientIDs = server.getClientIDs();
+		for (int i = 0; i < clientIDs.size(); i++)
+			server.wsSend(clientIDs[i], "CONNECTION_READY", false);
     }
-    else {
-       /* server.wsSend(clientID, "CONNECTION_REJECTED", false); // Send rejected msg
+    if (server.getClientIDs().size() > 2) {
+       server.wsSend(clientID, "CONNECTION_REJECTED", false); // Send rejected msg
         server.wsClose(clientID);
-		*/
     }
-	cout << clientID << endl;
 
 }
 
@@ -56,18 +53,44 @@ void closeHandler(int clientID){
 /* called when a client sends a message to the server */
 void messageHandler(int clientID, string message){
     ostringstream os;
+	vector<int> clientIDs = server.getClientIDs();
+
+	
+	if (message == "p1score") {
+		if (clientID == 0) {
+			player_scores[0]++;
+			os << player_scores[0];
+		}
+		else {
+			player_scores[1]++;
+			os << player_scores[1];
+		}
+			server.wsSend(clientID, os.str());
+		return;
+	}
 	
 
 	if (message == "p2score") {
-		player_scores[1]++;
-		os << player_scores[1];
+		if (clientID == 0)
+			os << player_scores[1];
+		else { os << player_scores[0]; }
+
+		for (int i = 0; i < clientIDs.size(); i++) {
+			if (clientIDs[i] == clientID)
+				server.wsSend(clientIDs[i], os.str());
+		}
+		return;
 	}
 
-	if (message == "p1score") {
-		player_scores[0]++;
-		os << player_scores[0];
-
+	if (message == "namerequest") {
+		cout << "name requested" << endl;
+		if (clientID == 0)
+			os << player2_name;
+		else { os << player1_name; }
+		server.wsSend(clientID, os.str());
+		return;
 	}
+
 
 	if (message == "0") {
 		if (clientID == 0)
@@ -101,13 +124,6 @@ void messageHandler(int clientID, string message){
 		}
 	}
 	
-
-
-    vector<int> clientIDs = server.getClientIDs();
-    for (int i = 0; i < clientIDs.size(); i++){
-        if (clientIDs[i] == clientID)
-            server.wsSend(clientIDs[i], os.str());
-    }
 	if (clientID == 0)
 		server.wsSend(clientID, player2Move);
 	else { server.wsSend(clientID, player1Move); }
