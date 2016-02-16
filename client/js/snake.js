@@ -367,6 +367,9 @@ function update() {
 
 		snake.insert(nx, ny);
 		snake2.insert(nx2, ny2);
+        
+        server.chang('locations');
+        server.send('locations', JSON.stringify(snake._queue));
 	}
 }
 /**
@@ -475,7 +478,7 @@ function connectServer() {
 
 	server.bind('namerequest', function (payload) {
 	    player2 = payload;
-	})
+	});
     
     // Try to connect...   
     server.connect();

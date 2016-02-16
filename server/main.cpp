@@ -51,11 +51,35 @@ void closeHandler(int clientID){
 }
 
 /* called when a client sends a message to the server */
-void messageHandler(int clientID, string message){
-    ostringstream os;
+void messageHandler(int clientID, string message) {
+	ostringstream os;
 	vector<int> clientIDs = server.getClientIDs();
 
-	
+
+	vector<pair<int, int>> locs;
+
+	cout << message << endl;
+
+	string s = message;
+	string delimiter = ":";
+
+	size_t pos = 0;
+	string x;
+	string y;
+	while ((pos = s.find(delimiter)) != string::npos) {
+		x = s[pos + delimiter.length()];
+		s.erase(0, pos + delimiter.length());
+		pos = s.find(delimiter);
+		y = s[pos + delimiter.length()];
+		s.erase(0, pos + delimiter.length());
+		locs.push_back(make_pair(stoi(x), stoi(y)));
+	}
+
+	for (int i = 0; i < locs.size(); i++)
+	{
+		cout << locs[i].first << ", " << locs[i].second << endl;
+	}
+
 	if (message == "p1score") {
 		if (clientID == 0) {
 			player_scores[0]++;
