@@ -11,12 +11,12 @@ EMPTY = 0,
 SNAKE = 1,
 FRUIT = 2,
 SNAKE2 = 3,
-LEFT  = 0,
-UP    = 1,
+LEFT = 0,
+UP = 1,
 RIGHT = 2,
-DOWN  = 3,
-KEY_LEFT  = 37,
-KEY_UP    = 38,
+DOWN = 3,
+KEY_LEFT = 37,
+KEY_UP = 38,
 KEY_RIGHT = 39,
 KEY_DOWN = 40,
 KEY_W = 87,
@@ -34,8 +34,12 @@ score2,
 score,	  /* number, keep track of the player score */
 temp,
 
-player1, 
+player1,
 player2, /* string, player IDs */
+
+name_request = false,
+get_direction = false,
+snake2_scored = false,
 
 
 serverIP, /* number */
@@ -174,12 +178,6 @@ snake2 = {
     }
 };
 
-function log(text) {
-    $log = $('#log');
-    //Add text to log
-    $log.append(($log.val() ? "\n" : '') + text);
-    temp = $log;
-}
 
 
 /**
@@ -229,8 +227,7 @@ function main() {
  * Resets and inits game objects
  */
 function init() {
-    server.change('namerequest');
-    server.send('namerequest', 'namerequest');
+    name_request = true;
     score = 0;
     score2 = 0;
     temp = ' ';
@@ -287,8 +284,8 @@ function update() {
 	}
     */
     // each  frames update the game state.
-	server.change('p1move');
-	server.send('p1move', snake.direction);
+
+	server.send('message', snake.direction);
 
 	if (frames%20 === 0) {
 		// pop the last element from the snake queue i.e. the
@@ -339,8 +336,7 @@ function update() {
 		// check wheter the new position are on the fruit item
 		if (grid.get(nx, ny) === FRUIT) {
 		    // increment the score and sets a new fruit position
-		    server.change('player1scored');
-		    server.send('player1scored','p1score');
+		    server.send('message', 'p1score');
 			setFood();
 		} else {
 			// take out the first item from the snake queue i.e
@@ -349,17 +345,12 @@ function update() {
 			grid.set(EMPTY, tail.x, tail.y);
 		}
 
-		if (grid.get(nx2, ny2) === FRUIT) {
-		    // increment the score and sets a new fruit position
-		    server.change('player2scored');
-		    server.send('player2scored','p2score');
-		    setFood();
-		} else {
-		    // take out the first item from the snake queue i.e
-		    // the tail and remove id from grid
+		if (snake2_scored == false){
 		    var tail = snake2.remove();
 		    grid.set(EMPTY, tail.x, tail.y);
-		}
+		}else{
+	        snake2_scored = false;
+	    }
 		// add a snake id at the new position and append it to
 		// the snake queue
 		grid.set(SNAKE, nx, ny);
@@ -368,8 +359,7 @@ function update() {
 		snake.insert(nx, ny);
 		snake2.insert(nx2, ny2);
         
-        server.chang('locations');
-        server.send('locations', JSON.stringify(snake._queue));
+        
 	}
 }
 /**
@@ -446,39 +436,44 @@ function connectServer() {
 	});
 
 	// (3) Message event -- message received from server
-	server.bind('message', function( payload ) {
+	server.bind('message', function (payload) {
+	    
+
+	    
+        if (name_request == true) {
+	        player2 = payload;
+	        name_request = false;
+	        get_direction = true;
+        }
+        else if (payload == "p1scored") {
+            score++;
+        }
+        else if (payload == "p2scored") {
+            score2++;
+            snake2_scored = true;
+        }
+	    else if (get_direction == true) {
+	        snake2.direction = parseInt(payload, 10);
+	    }
+        
+	 
         
         // Connection ready message: let's start playing the game
-        if (payload == "CONNECTION_READY") {
+        else if (payload == "CONNECTION_READY") {
             server.send('message', player1);  // Send player id to server
-            server.send('message', player2);  // ""
             showConnectionStatus(true); // Update the notification strip          
             main(); // start the game 
         }
         
         // Connection rejected message: let's display the message panel
         // to inform the user
-        if (payload == "CONNECTION_REJECTED") {
+        else if (payload == "CONNECTION_REJECTED") {
             showMessagePanel("Connection rejected by server", "Please try again later", "Try again");
-            document.getElementById("restart-btn").focus();    
+            document.getElementById("restart-btn").focus();
         }
+
  	});
 
-	server.bind('player1scored', function (payload) {
-	    score = payload;
-	});
-
-	server.bind('player2scored', function (payload) {
-	    score2 = payload;
-	});
-
-	server.bind('p1move', function (payload) {
-	    snake2.direction = parseInt(payload, 10);
-	});
-
-	server.bind('namerequest', function (payload) {
-	    player2 = payload;
-	});
     
     // Try to connect...   
     server.connect();
