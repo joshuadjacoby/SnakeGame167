@@ -27,8 +27,6 @@ void openHandler(int clientID){
     if (server.getClientIDs().size() == 2) {
         player_scores[0] = 0;
 		player_scores[1] = 0;
-		player1_name = " ";
-		player2_name = " ";
 		player1Move = 3;
 		player2Move = 3;
 		player1nameset = false;
@@ -62,11 +60,19 @@ void messageHandler(int clientID, string message) {
 	if (clientID == 0 && player1nameset == false) {
 		player1_name = message;
 		player1nameset = true;
+		if (player1nameset == true && player2nameset == true) {
+			server.wsSend(0, player2_name);
+			server.wsSend(1, player1_name);
+		}
 		return;
 	}
 	if (clientID == 1 && player2nameset == false) {
 		player2_name = message;
 		player2nameset = true;
+		if (player1nameset == true && player2nameset == true) {
+			server.wsSend(0, player2_name);
+			server.wsSend(1, player1_name);
+		}
 		return;
 	}
 
@@ -102,39 +108,18 @@ void messageHandler(int clientID, string message) {
 	if (message == "p1score") {
 		if (clientID == 0) {
 			player_scores[0]++;
-			os << player_scores[0];
+			server.wsSend(0, "p1scored");
+			server.wsSend(1, "p2scored");
 		}
 		else {
 			player_scores[1]++;
-			os << player_scores[1];
+			server.wsSend(1, "p1scored");
+			server.wsSend(0, "p2scored");
 		}
-			server.wsSend(clientID, os.str());
+			
 		return;
 	}
 	
-
-	if (message == "p2score") {
-		if (clientID == 0)
-			os << player_scores[1];
-		else { os << player_scores[0]; }
-
-		for (int i = 0; i < clientIDs.size(); i++) {
-			if (clientIDs[i] == clientID)
-				server.wsSend(clientIDs[i], os.str());
-		}
-		return;
-	}
-
-	if (message == "namerequest") {
-		cout << "name requested" << endl;
-		if (clientID == 0)
-			os << player2_name;
-		else { os << player1_name; }
-		cout << os.str() << std::endl;
-		server.wsSend(clientID, os.str());
-		return;
-	}
-
 
 	if (message == "0") {
 		if (clientID == 0)
