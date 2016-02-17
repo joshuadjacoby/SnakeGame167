@@ -74,7 +74,7 @@ location setFood(vector<location> a, vector<location> b) {
 			}
 		}
 	}
-
+    
 	//chooses a random cell
 	location randpos = empty[rand() % empty.size()];
 	return randpos;
@@ -182,10 +182,10 @@ void messageHandler(int clientID, string message) {
 		}
 		if (!player1_locs.empty() && !player2_locs.empty()) {
 			location fruit = setFood(player1_locs, player2_locs);
-			string fruitString = to_string(fruit.first) + "/" + to_string(fruit.second);
-			cout << fruitString << endl;
-			server.wsSend(0, fruitString);
-			server.wsSend(1, fruitString);
+			string playerOneFruitString = to_string(fruit.first) + "/" + to_string(fruit.second);
+			string playerTwoFruitString = to_string(ROWS - fruit.first) + "/" + to_string(COLS - fruit.second);
+			server.wsSend(0, playerOneFruitString);
+			server.wsSend(1, playerTwoFruitString);
 		}
 	}
 
