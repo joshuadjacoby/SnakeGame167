@@ -14,8 +14,10 @@ webSocket server;
 int player_scores[2];
 string player1_name;
 string player2_name;
-string player1Move = "3";
-string player2Move = "3";
+string player1Move;
+string player2Move;
+bool player1nameset;
+bool player2nameset;
 
 
 
@@ -27,6 +29,10 @@ void openHandler(int clientID){
 		player_scores[1] = 0;
 		player1_name = " ";
 		player2_name = " ";
+		player1Move = 3;
+		player2Move = 3;
+		player1nameset = false;
+		player2nameset = false;
 		vector<int> clientIDs = server.getClientIDs();
 		for (int i = 0; i < clientIDs.size(); i++)
 			server.wsSend(clientIDs[i], "CONNECTION_READY", false);
@@ -52,10 +58,22 @@ void closeHandler(int clientID){
 
 /* called when a client sends a message to the server */
 void messageHandler(int clientID, string message) {
+
+	if (clientID == 0 && player1nameset == false) {
+		player1_name = message;
+		player1nameset = true;
+		return;
+	}
+	if (clientID == 1 && player2nameset == false) {
+		player2_name = message;
+		player2nameset = true;
+		return;
+	}
+
 	ostringstream os;
 	vector<int> clientIDs = server.getClientIDs();
 
-
+	/*
 	vector<pair<int, int>> locs;
 
 	cout << message << endl;
@@ -79,6 +97,7 @@ void messageHandler(int clientID, string message) {
 	{
 		cout << locs[i].first << ", " << locs[i].second << endl;
 	}
+	*/
 
 	if (message == "p1score") {
 		if (clientID == 0) {
@@ -111,6 +130,7 @@ void messageHandler(int clientID, string message) {
 		if (clientID == 0)
 			os << player2_name;
 		else { os << player1_name; }
+		cout << os.str() << std::endl;
 		server.wsSend(clientID, os.str());
 		return;
 	}
@@ -138,14 +158,6 @@ void messageHandler(int clientID, string message) {
 		if (clientID == 0)
 			player1Move = "1";
 		else { player2Move = "1"; }
-	}
-
-	else {
-		if (clientID == 0)
-			player1_name = message;
-		else {
-			player2_name = message;
-		}
 	}
 	
 	if (clientID == 0)
