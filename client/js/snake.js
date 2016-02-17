@@ -187,8 +187,9 @@ snake2 = {
 function setFood() {
 	//var empty = [];
 	// iterate through the grid and find all empty cells
-    
-    server.send('fruit', JSON.stringify(snake._queue));
+    get_direction = false;
+    fruit_location = true;
+    server.send('message', JSON.stringify(snake._queue));
     
     /*
 	for (var x=0; x < grid.width; x++) {
@@ -203,7 +204,6 @@ function setFood() {
     */
 	//grid.set(FRUIT, randpos.x, randpos.y);
     
-    fruit_location = true;
 }
 /**
  * Starts the game
@@ -445,13 +445,16 @@ function connectServer() {
 
 	// (3) Message event -- message received from server
 	server.bind('message', function (payload) {
-	    
-
-	    
         if (name_request == true) {
 	        player2 = payload;
 	        name_request = false;
 	        get_direction = true;
+        }
+        else if (fruit_location == true) {
+            var xy = payload.split("/");
+            grid.set(FRUIT, parseInt(xy[0]), parseInt(xy[1]));
+            fruit_location = false;
+            get_direction = true;
         }
         else if (payload == "p1scored") {
             score++;
@@ -463,14 +466,7 @@ function connectServer() {
 	    else if (get_direction == true) {
 	        snake2.direction = parseInt(payload, 10);
 	    }
-        else if (fruit_location == true) {
-            var xy = payload.split();
-            grid.set(FRUIT, parseInt(xy[0]), parseInt(xy[1]));
-            fruit_location = false;
-        }
-        
-	 
-        
+	    
         // Connection ready message: let's start playing the game
         else if (payload == "CONNECTION_READY") {
             server.send('message', player1);  // Send player id to server
