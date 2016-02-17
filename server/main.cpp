@@ -74,7 +74,7 @@ location setFood(vector<location> a, vector<location> b) {
 			}
 		}
 	}
-    
+
 	//chooses a random cell
 	location randpos = empty[rand() % empty.size()];
 	return randpos;

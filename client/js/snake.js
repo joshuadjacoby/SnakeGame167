@@ -462,6 +462,7 @@ function connectServer() {
         else if (payload == "p2scored") {
             score2++;
             snake2_scored = true;
+            setFood();
         }
 	    else if (get_direction == true) {
 	        snake2.direction = parseInt(payload, 10);
