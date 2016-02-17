@@ -67,8 +67,8 @@ void closeHandler(int clientID){
 location setFood(vector<location> a, vector<location> b) {
 	vector<location> empty;
 
-	for (int x = 0; x < ROWS; ++x) {
-		for (int y = 0; y < COLS; ++y) {
+	for (int x = 0; x < ROWS; x++) {
+		for (int y = 0; y < COLS; y++) {
 			if ((find(a.begin(), a.end(), location(x, y)) != a.end()) && (find(b.begin(), b.end(), location(x, y)) != b.end())) {
 				empty.push_back(location(x, y));
 			}
@@ -183,7 +183,7 @@ void messageHandler(int clientID, string message) {
 		if (!player1_locs.empty() && !player2_locs.empty()) {
 			location fruit = setFood(player1_locs, player2_locs);
 			string playerOneFruitString = to_string(fruit.first) + "/" + to_string(fruit.second);
-			string playerTwoFruitString = to_string(ROWS - fruit.first) + "/" + to_string(COLS - fruit.second);
+			string playerTwoFruitString = to_string(ROWS - fruit.first - 1) + "/" + to_string(COLS - fruit.second - 1);
 			server.wsSend(0, playerOneFruitString);
 			server.wsSend(1, playerTwoFruitString);
 		}
