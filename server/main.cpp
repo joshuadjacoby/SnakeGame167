@@ -107,31 +107,7 @@ void messageHandler(int clientID, string message) {
 	vector<int> clientIDs = server.getClientIDs();
 
 
-	if (message == "fruit") {
-		string s = message;
-		string delimiter = ":";
 
-		size_t pos = 0;
-		string x;
-		string y;
-		while ((pos = s.find(delimiter)) != string::npos) {
-			x = s[pos + delimiter.length()];
-			s.erase(0, pos + delimiter.length());
-			pos = s.find(delimiter);
-			y = s[pos + delimiter.length()];
-			s.erase(0, pos + delimiter.length());
-			if (clientID == 0)
-				player1_locs.push_back(make_pair(stoi(x), stoi(y)));
-			else
-				player2_locs.push_back(make_pair(stoi(x), stoi(y)));
-		}
-		if (!player1_locs.empty() && !player2_locs.empty()) {
-			location fruit = setFood(player1_locs, player2_locs);
-			string fruitString = to_string(fruit.first) + "/" + to_string(fruit.second);
-			server.wsSend(0, fruitString);
-			server.wsSend(1, fruitString);
-		}
-	}
 	if (message == "p1score") {
 		if (clientID == 0) {
 			player_scores[0]++;
@@ -152,29 +128,68 @@ void messageHandler(int clientID, string message) {
 		if (clientID == 0)
 			player1Move = "2";
 		else { player2Move = "2"; }
+		if (clientID == 0)
+			server.wsSend(clientID, player2Move);
+		else { server.wsSend(clientID, player1Move); }
+		return;
 	}
 
 	if (message == "1") {
 		if (clientID == 0)
 			player1Move = "3";
 		else { player2Move = "3"; }
+		if (clientID == 0)
+			server.wsSend(clientID, player2Move);
+		else { server.wsSend(clientID, player1Move); }
+		return;
 	}
 
 	if (message == "2") {
 		if (clientID == 0)
 			player1Move = "0";
-		else { player2Move = "0"; }
+		else { player2Move = "0"; }	if (clientID == 0)
+			server.wsSend(clientID, player2Move);
+		else { server.wsSend(clientID, player1Move); }
+		return;
 	}
 
 	if (message == "3") {
 		if (clientID == 0)
 			player1Move = "1";
 		else { player2Move = "1"; }
+		if (clientID == 0)
+			server.wsSend(clientID, player2Move);
+		else { server.wsSend(clientID, player1Move); }
+		return;
+	}
+	else {
+		string s = message;
+		string delimiter = ":";
+
+		size_t pos = 0;
+		string x;
+		string y;
+		while ((pos = s.find(delimiter)) != string::npos) {
+			x = s[pos + delimiter.length()];
+			s.erase(0, pos + delimiter.length());
+			pos = s.find(delimiter);
+			y = s[pos + delimiter.length()];
+			s.erase(0, pos + delimiter.length());
+			if (clientID == 0)
+				player1_locs.push_back(make_pair(stoi(x), stoi(y)));
+			else
+				player2_locs.push_back(make_pair(stoi(x), stoi(y)));
+		}
+		if (!player1_locs.empty() && !player2_locs.empty()) {
+			location fruit = setFood(player1_locs, player2_locs);
+			string fruitString = to_string(fruit.first) + "/" + to_string(fruit.second);
+			cout << fruitString << endl;
+			server.wsSend(0, fruitString);
+			server.wsSend(1, fruitString);
+		}
 	}
 
-	if (clientID == 0)
-		server.wsSend(clientID, player2Move);
-	else { server.wsSend(clientID, player1Move); }
+
 }
 
 /* called once per select() loop */
