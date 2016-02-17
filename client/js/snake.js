@@ -40,6 +40,7 @@ player2, /* string, player IDs */
 name_request = false,
 get_direction = false,
 snake2_scored = false,
+fruit_location = false,
 
 
 serverIP, /* number */
@@ -184,8 +185,12 @@ snake2 = {
  * Set a food id at a random free cell in the grid
  */
 function setFood() {
-	var empty = [];
+	//var empty = [];
 	// iterate through the grid and find all empty cells
+    
+    server.send('fruit', JSON.stringify(snake._queue));
+    
+    /*
 	for (var x=0; x < grid.width; x++) {
 		for (var y=0; y < grid.height; y++) {
 			if (grid.get(x, y) === EMPTY) {
@@ -193,9 +198,12 @@ function setFood() {
 			}
 		}
 	}
-	// chooses a random cell
+	//chooses a random cell
 	var randpos = empty[Math.round(Math.random()*(empty.length - 1))];
-	grid.set(FRUIT, randpos.x, randpos.y);
+    */
+	//grid.set(FRUIT, randpos.x, randpos.y);
+    
+    fruit_location = true;
 }
 /**
  * Starts the game
@@ -455,6 +463,11 @@ function connectServer() {
 	    else if (get_direction == true) {
 	        snake2.direction = parseInt(payload, 10);
 	    }
+        else if (fruit_location == true) {
+            var xy = payload.split();
+            grid.set(FRUIT, parseInt(xy[0]), parseInt(xy[1]));
+            fruit_location = false;
+        }
         
 	 
         

@@ -19,7 +19,13 @@ string player2Move;
 bool player1nameset;
 bool player2nameset;
 
+typedef pair<int, int> location;
 
+vector<location> player1_locs;
+vector<location> player2_locs;
+
+const int COLS = 26;
+const int ROWS = 26;
 
 /* called when a client connects */
 void openHandler(int clientID){
@@ -54,6 +60,27 @@ void closeHandler(int clientID){
     }
 }
 
+
+/**
+* Set a food id at a random free cell in the grid
+*/
+location setFood(vector<location> a, vector<location> b) {
+	vector<location> empty;
+
+	for (int x = 0; x < ROWS; ++x) {
+		for (int y = 0; y < COLS; ++y) {
+			if ((find(a.begin(), a.end(), location(x, y)) != a.end()) && (find(b.begin(), b.end(), location(x, y)) != b.end())) {
+				empty.push_back(location(x, y));
+			}
+		}
+	}
+
+	//chooses a random cell
+	location randpos = empty[rand() % empty.size()];
+	return randpos;
+
+}
+
 /* called when a client sends a message to the server */
 void messageHandler(int clientID, string message) {
 
@@ -79,32 +106,32 @@ void messageHandler(int clientID, string message) {
 	ostringstream os;
 	vector<int> clientIDs = server.getClientIDs();
 
-	/*
-	vector<pair<int, int>> locs;
 
-	cout << message << endl;
+	if (message == "fruit") {
+		string s = message;
+		string delimiter = ":";
 
-	string s = message;
-	string delimiter = ":";
-
-	size_t pos = 0;
-	string x;
-	string y;
-	while ((pos = s.find(delimiter)) != string::npos) {
-		x = s[pos + delimiter.length()];
-		s.erase(0, pos + delimiter.length());
-		pos = s.find(delimiter);
-		y = s[pos + delimiter.length()];
-		s.erase(0, pos + delimiter.length());
-		locs.push_back(make_pair(stoi(x), stoi(y)));
+		size_t pos = 0;
+		string x;
+		string y;
+		while ((pos = s.find(delimiter)) != string::npos) {
+			x = s[pos + delimiter.length()];
+			s.erase(0, pos + delimiter.length());
+			pos = s.find(delimiter);
+			y = s[pos + delimiter.length()];
+			s.erase(0, pos + delimiter.length());
+			if (clientID == 0)
+				player1_locs.push_back(make_pair(stoi(x), stoi(y)));
+			else
+				player2_locs.push_back(make_pair(stoi(x), stoi(y)));
+		}
+		if (!player1_locs.empty() && !player2_locs.empty()) {
+			location fruit = setFood(player1_locs, player2_locs);
+			string fruitString = to_string(fruit.first) + "/" + to_string(fruit.second);
+			server.wsSend(0, fruitString);
+			server.wsSend(1, fruitString);
+		}
 	}
-
-	for (int i = 0; i < locs.size(); i++)
-	{
-		cout << locs[i].first << ", " << locs[i].second << endl;
-	}
-	*/
-
 	if (message == "p1score") {
 		if (clientID == 0) {
 			player_scores[0]++;
@@ -116,10 +143,10 @@ void messageHandler(int clientID, string message) {
 			server.wsSend(1, "p1scored");
 			server.wsSend(0, "p2scored");
 		}
-			
+
 		return;
 	}
-	
+
 
 	if (message == "0") {
 		if (clientID == 0)
@@ -144,7 +171,7 @@ void messageHandler(int clientID, string message) {
 			player1Move = "1";
 		else { player2Move = "1"; }
 	}
-	
+
 	if (clientID == 0)
 		server.wsSend(clientID, player2Move);
 	else { server.wsSend(clientID, player1Move); }
