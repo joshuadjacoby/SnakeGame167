@@ -188,7 +188,7 @@ function setFood() {
 	//var empty = [];
 	// iterate through the grid and find all empty cells
     get_direction = false;
-    fruit_location = true;
+    //fruit_location = true;
     server.send('message', JSON.stringify(snake._queue));
     
     /*
@@ -287,8 +287,8 @@ function update() {
     */
     // each  frames update the game state.
 
+	
 	//server.send('message', JSON.stringify(snake._queue));
-
 	if (frames%20 === 0) {
 		// pop the last element from the snake queue i.e. the
 		// head
@@ -312,20 +312,7 @@ function update() {
 				ny++;
 				break;
 		}
-        switch (snake2.direction) {
-			case LEFT:
-				nx2--;
-				break;
-			case UP:
-				ny2--;
-				break;
-			case RIGHT:
-				nx2++;
-				break;
-			case DOWN:
-				ny2++;
-				break;
-		}
+        
 		// checks all gameover conditions
 		if (0 > nx || nx > grid.width-1  ||
 			0 > ny || ny > grid.height-1 ||
@@ -442,7 +429,6 @@ function connectServer() {
         if (name_request == true) {
 	        player2 = payload;
 	        name_request = false;
-	        get_direction = true;
         }
         else if (fruit_location == true) {
             var xy = payload.split("/");
@@ -466,6 +452,7 @@ function connectServer() {
 	       grid.set(SNAKE, sp.x, sp.y);
 	       grid.set(SNAKE2, sp2.x, sp2.y);
 	       setFood();
+	       get_direction = true;
            loop();
         }
 	    else if (payload == "1") {
@@ -476,9 +463,10 @@ function connectServer() {
 	       grid.set(SNAKE2, sp.x, sp.y);
 	       grid.set(SNAKE, sp2.x, sp2.y);
 	       setFood();
+	       get_direction = true;
            loop();
         }
-        else if (get_direction == true) {
+	    else if (get_direction == true) {
 	        snake2._queue = JSON.parse(payload);
 	    }
         // Connection ready message: let's start playing the game

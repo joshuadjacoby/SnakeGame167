@@ -14,8 +14,8 @@ webSocket server;
 int player_scores[2];
 string player1_name;
 string player2_name;
-string player1Move;
-string player2Move;
+string player1queue;
+string player2queue;
 bool player1nameset;
 bool player2nameset;
 
@@ -33,8 +33,8 @@ void openHandler(int clientID){
     if (server.getClientIDs().size() == 2) {
         player_scores[0] = 0;
 		player_scores[1] = 0;
-		player1Move = 3;
-		player2Move = 3;
+		player1queue = "[{x:23,y:0}]";
+		player2queue = "[{x:13,y:0}]";
 		player1nameset = false;
 		player2nameset = false;
 		vector<int> clientIDs = server.getClientIDs();
@@ -125,6 +125,7 @@ void messageHandler(int clientID, string message) {
 
 	if (message == "client" && clientID == 0) {
 		server.wsSend(0, "0");
+		return;
 	}
 
 	if (message == "client" && clientID == 1) {
@@ -132,45 +133,19 @@ void messageHandler(int clientID, string message) {
 		return;
 	}
 
-	if (message == "0") {
-		if (clientID == 0)
-			player1Move = "2";
-		else { player2Move = "2"; }
-		if (clientID == 0)
-			server.wsSend(clientID, player2Move);
-		else { server.wsSend(clientID, player1Move); }
-		return;
-	}
-
-	if (message == "1") {
-		if (clientID == 0)
-			player1Move = "3";
-		else { player2Move = "3"; }
-		if (clientID == 0)
-			server.wsSend(clientID, player2Move);
-		else { server.wsSend(clientID, player1Move); }
-		return;
-	}
-
-	if (message == "2") {
-		if (clientID == 0)
-			player1Move = "0";
-		else { player2Move = "0"; }	if (clientID == 0)
-			server.wsSend(clientID, player2Move);
-		else { server.wsSend(clientID, player1Move); }
-		return;
-	}
-
-	if (message == "3") {
-		if (clientID == 0)
-			player1Move = "1";
-		else { player2Move = "1"; }
-		if (clientID == 0)
-			server.wsSend(clientID, player2Move);
-		else { server.wsSend(clientID, player1Move); }
-		return;
-	}
+	
 	else {
+		cout << message << endl;
+		if (clientID == 0) {
+			//player1queue = message;
+			server.wsSend(0, player2queue);
+		}
+		if (clientID == 1) {
+			//player2queue = message;
+			server.wsSend(1, player1queue);
+		}
+		/*
+		  
 		string s = message;
 		string delimiter = ":";
 
@@ -195,6 +170,7 @@ void messageHandler(int clientID, string message) {
 			server.wsSend(0, playerOneFruitString);
 			server.wsSend(1, playerTwoFruitString);
 		}
+		*/
 	}
 
 
