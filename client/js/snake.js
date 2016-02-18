@@ -340,13 +340,12 @@ function update() {
 			0 > ny2 || ny2 > grid.height - 1 || grid.get(nx, ny) === SNAKE2 ||
 			grid.get(nx2, ny2) === SNAKE
 		) {
-			//endGame();
+			endGame();
 		}
 		// check wheter the new position are on the fruit item
 		if (grid.get(nx, ny) === FRUIT) {
 		    // increment the score and sets a new fruit position
 		    server.send('message', 'p1score');
-			setFood();
 		} else {
 			// take out the first item from the snake queue i.e
 			// the tail and remove id from grid
@@ -441,6 +440,15 @@ function connectServer() {
 	        player2 = payload;
 	        name_request = false;
         }
+        else if (payload == "p1scored") {
+            score++;
+            setFood();
+        }
+        else if (payload == "p2scored") {
+            score2++;
+            get_direction = false;
+            fruit_location = true;
+        }
         else if (get_direction == true) {
 	        var queue = JSON.parse(payload);
 	        snake2.update(queue);
@@ -450,14 +458,6 @@ function connectServer() {
             grid.set(FRUIT, parseInt(xy[0]), parseInt(xy[1]));
             fruit_location = false;
             get_direction = true;
-        }
-        else if (payload == "p1scored") {
-            score++;
-        }
-        else if (payload == "p2scored") {
-            score2++;
-            snake2_scored = true;
-            setFood();
         }
         else if (payload == "0") {
            var sp = { x: Math.floor(COLS / 2), y: ROWS - 1 };
