@@ -444,6 +444,9 @@ function connectServer() {
             score++;
             setFood();
         }
+        else if (payload == "Player has left.") {
+            endGame();
+        }
         else if (payload == "p2scored") {
             score2++;
             get_direction = false;
