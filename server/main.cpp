@@ -117,7 +117,6 @@ void messageHandler(int clientID, string message) {
 		}
 		if (clientID == 1){
 			player2ready = true;
-			player1ready = true;
 			if (player1ready == true && player2ready == true) {
 				server.wsSend(0, "ready");
 				server.wsSend(1, "ready");
