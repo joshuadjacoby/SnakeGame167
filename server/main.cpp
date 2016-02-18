@@ -76,8 +76,8 @@ location setFood(vector<location> a, vector<location> b) {
 	}
 
 	//chooses a random cell
-	location randpos = empty[rand() % empty.size()];
-	return randpos;
+	//location randpos = empty[rand() % empty.size()];
+	return location(1,5);
 
 }
 
@@ -123,6 +123,14 @@ void messageHandler(int clientID, string message) {
 		return;
 	}
 
+	if (message == "client" && clientID == 0) {
+		server.wsSend(0, "0");
+	}
+
+	if (message == "client" && clientID == 1) {
+		server.wsSend(1, "1");
+		return;
+	}
 
 	if (message == "0") {
 		if (clientID == 0)

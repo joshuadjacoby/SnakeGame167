@@ -229,7 +229,6 @@ function main() {
 	});
 	// intatiate game objects and starts the game loop
 	init();
-	loop();
 }
 /**
  * Resets and inits game objects
@@ -240,13 +239,8 @@ function init() {
     score2 = 0;
     temp = ' ';
 	grid.init(EMPTY, COLS, ROWS);
-	var sp = { x: Math.floor(COLS / 2), y: ROWS - 1 };
-	var sp2 = { x: Math.floor(COLS / 2), y: 0 };
-	snake.init(UP, sp.x, sp.y);
-	snake2.init(DOWN, sp2.x, 0);
-	grid.set(SNAKE, sp.x, sp.y);
-	grid.set(SNAKE2, sp2.x, 0);
-	setFood();
+    
+    server.send('message', 'client');
 }
 /**
  * The game loop function, used for game updates and rendering
@@ -293,7 +287,7 @@ function update() {
     */
     // each  frames update the game state.
 
-	server.send('message', snake.direction);
+	//server.send('message', JSON.stringify(snake._queue));
 
 	if (frames%20 === 0) {
 		// pop the last element from the snake queue i.e. the
@@ -318,19 +312,19 @@ function update() {
 				ny++;
 				break;
 		}
-		switch (snake2.direction) {
-		    case LEFT:
-		        nx2--;
-		        break;
-		    case UP:
-		        ny2--;
-		        break;
-		    case RIGHT:
-		        nx2++;
-		        break;
-		    case DOWN:
-		        ny2++;
-		        break;
+        switch (snake2.direction) {
+			case LEFT:
+				nx2--;
+				break;
+			case UP:
+				ny2--;
+				break;
+			case RIGHT:
+				nx2++;
+				break;
+			case DOWN:
+				ny2++;
+				break;
 		}
 		// checks all gameover conditions
 		if (0 > nx || nx > grid.width-1  ||
@@ -339,7 +333,7 @@ function update() {
 			0 > ny2 || ny2 > grid.height - 1 || grid.get(nx2, ny2) === SNAKE2 || grid.get(nx, ny) === SNAKE2 ||
 			grid.get(nx2, ny2) === SNAKE
 		) {
-			endGame();
+			//endGame();
 		}
 		// check wheter the new position are on the fruit item
 		if (grid.get(nx, ny) === FRUIT) {
@@ -464,10 +458,29 @@ function connectServer() {
             snake2_scored = true;
             setFood();
         }
-	    else if (get_direction == true) {
-	        snake2.direction = parseInt(payload, 10);
+        else if (payload == "0") {
+           var sp = { x: Math.floor(COLS / 2), y: ROWS - 1 };
+	       var sp2 = { x: Math.floor(COLS / 2), y: 0 };
+	       snake.init(UP, sp.x, sp.y);
+	       snake2.init(DOWN, sp2.x, sp2.y);
+	       grid.set(SNAKE, sp.x, sp.y);
+	       grid.set(SNAKE2, sp2.x, sp2.y);
+	       setFood();
+           loop();
+        }
+	    else if (payload == "1") {
+           var sp2 = { x: Math.floor(COLS / 2), y: ROWS - 1 };
+	       var sp = { x: Math.floor(COLS / 2), y: 0 };
+	       snake.init(DOWN, sp.x, sp.y);
+	       snake2.init(UP, sp2.x, sp2.y);
+	       grid.set(SNAKE2, sp.x, sp.y);
+	       grid.set(SNAKE, sp2.x, sp2.y);
+	       setFood();
+           loop();
+        }
+        else if (get_direction == true) {
+	        snake2._queue = JSON.parse(payload);
 	    }
-	    
         // Connection ready message: let's start playing the game
         else if (payload == "CONNECTION_READY") {
             server.send('message', player1);  // Send player id to server
