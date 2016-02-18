@@ -440,6 +440,9 @@ function connectServer() {
 	        player2 = payload;
 	        name_request = false;
         }
+        else if (message == "ready") {
+            loop();
+        }
         else if (payload == "p1scored") {
             score++;
             setFood();
@@ -467,7 +470,7 @@ function connectServer() {
 	       grid.set(SNAKE, sp.x, sp.y);
 	       grid.set(SNAKE2, sp2.x, sp2.y);
 	       setFood();
-           loop();
+	       server.send('message', 'ready');
         }
 	    else if (payload == "1") {
            var sp2 = { x: Math.floor(COLS / 2), y: ROWS - 1 };
@@ -477,7 +480,7 @@ function connectServer() {
 	       grid.set(SNAKE2, sp.x, sp.y);
 	       grid.set(SNAKE, sp2.x, sp2.y);
 	       setFood();
-           loop();
+	       server.send('message', 'ready');
         }
         // Connection ready message: let's start playing the game
         else if (payload == "CONNECTION_READY") {

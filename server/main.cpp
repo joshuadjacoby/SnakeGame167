@@ -18,6 +18,9 @@ string player1queue;
 string player2queue;
 bool player1nameset;
 bool player2nameset;
+bool player1ready;
+bool player2ready;
+
 
 typedef pair<int, int> location;
 
@@ -37,6 +40,8 @@ void openHandler(int clientID){
 		player2queue = "[{\"x\":13, \"y\" : 0}]";
 		player1nameset = false;
 		player2nameset = false;
+		bool player1ready = false;
+		bool player2ready = false;
 		vector<int> clientIDs = server.getClientIDs();
 		for (int i = 0; i < clientIDs.size(); i++)
 			server.wsSend(clientIDs[i], "CONNECTION_READY", false);
@@ -51,7 +56,7 @@ void openHandler(int clientID){
 /* called when a client disconnects */
 void closeHandler(int clientID){
     ostringstream os;
-    os << "Stranger " << clientID << " has left.";
+    os << "Stranger player has left.";
 
     vector<int> clientIDs = server.getClientIDs();
     for (int i = 0; i < clientIDs.size(); i++){
@@ -101,6 +106,20 @@ void messageHandler(int clientID, string message) {
 		}
 		return;
 	}
+
+	if (message == "ready") {
+		if (clientID == 0)
+			player1ready = true;
+		if (clientID == 1)
+			player2ready = true;
+		if (player1ready == true && player2ready == true) {
+			server.wsSend(0, "ready");
+			server.wsSend(1, "ready");
+		}
+
+	return;
+		}
+
 
 	ostringstream os;
 	vector<int> clientIDs = server.getClientIDs();
