@@ -256,12 +256,10 @@ function main() {
  * Resets and inits game objects
  */
 function init() {
-    name_request = true;
     score = 0;
     score2 = 0;
     temp = ' ';
 	grid.init(EMPTY, COLS, ROWS);
-    
     server.send('message', 'client');
 }
 /**
@@ -436,11 +434,11 @@ function connectServer() {
 
 	// (3) Message event -- message received from server
 	server.bind('message', function (payload) {
-        if (name_request == true) {
+	    if (name_request == true) {
 	        player2 = payload;
 	        name_request = false;
         }
-        else if (message == "ready") {
+        else if (payload == "ready") {
             loop();
         }
         else if (payload == "p1scored") {
@@ -472,7 +470,7 @@ function connectServer() {
 	       setFood();
 	       server.send('message', 'ready');
         }
-	    else if (payload == "1") {
+        else if (payload == "1") {
            var sp2 = { x: Math.floor(COLS / 2), y: ROWS - 1 };
 	       var sp = { x: Math.floor(COLS / 2), y: 0 };
 	       snake.init(DOWN, sp.x, sp.y);
@@ -484,7 +482,9 @@ function connectServer() {
         }
         // Connection ready message: let's start playing the game
         else if (payload == "CONNECTION_READY") {
-            server.send('message', player1);  // Send player id to server
+            name_request = true;
+            server.send('message', player1);
+            // Send player id to server
             showConnectionStatus(true); // Update the notification strip          
             main(); // start the game 
         }
