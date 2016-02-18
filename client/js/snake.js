@@ -259,7 +259,7 @@ function init() {
     score = 0;
     score2 = 0;
     temp = ' ';
-	grid.init(EMPTY, COLS, ROWS);
+
 }
 /**
  * The game loop function, used for game updates and rendering
@@ -439,7 +439,6 @@ function connectServer() {
 	        name_request = false;
         }
 	    else if (payload == "ready") {
-	        alert(payload);
 	        setFood();
             loop();
         }
@@ -484,6 +483,7 @@ function connectServer() {
         // Connection ready message: let's start playing the game
         else if (payload == "CONNECTION_READY") {
             name_request = true;
+            grid.init(EMPTY, COLS, ROWS);
             server.send('message', player1);
             // Send player id to server
             showConnectionStatus(true); // Update the notification strip          
