@@ -3,7 +3,7 @@
 //Jonathan Saavedra
 var
 /**
- * Constats
+ * Constants
  */
 COLS = 26,
 ROWS = 26,
@@ -161,8 +161,22 @@ snake2 = {
         this._queue = [];
         this.insert(x, y);
     },
+    
     update: function (x) {
+        // 1. Iterate through current queue and set each corresponding grid cell empty
+       
+        for (var i  = 0; i < this._queue.length; i++ ) {
+            grid.set(EMPTY, this._queue[i].x, this._queue[i].y);
+        }
+        // 2. Replace current queue with new queue, x
         this._queue = x;
+
+        // 3. Iterate through new queue and set each corresponding grid cell to snake2
+        for (var i  = 0; i < this._queue.length; i++ ) {
+            grid.set(SNAKE2, this._queue[i].x, this._queue[i].y);
+        }
+
+        // 4. Update the 'last' pointer
         this.last = this._queue[0];
     },
     /**
@@ -323,7 +337,7 @@ function update() {
 		if (0 > nx || nx > grid.width-1  ||
 			0 > ny || ny > grid.height-1 ||
 			grid.get(nx, ny) === SNAKE || 0 > nx2 || nx2 > grid.width - 1 ||
-			0 > ny2 || ny2 > grid.height - 1 || grid.get(nx2, ny2) === SNAKE2 || grid.get(nx, ny) === SNAKE2 ||
+			0 > ny2 || ny2 > grid.height - 1 || grid.get(nx, ny) === SNAKE2 ||
 			grid.get(nx2, ny2) === SNAKE
 		) {
 			//endGame();
@@ -340,19 +354,10 @@ function update() {
 			grid.set(EMPTY, tail.x, tail.y);
 		}
 
-		if (snake2_scored == false){
-		    var tail = snake2.remove();
-		    grid.set(EMPTY, tail.x, tail.y);
-		}else{
-	        snake2_scored = false;
-	    }
 		// add a snake id at the new position and append it to
 		// the snake queue
 		grid.set(SNAKE, nx, ny);
-		grid.set(SNAKE2, nx2, ny2);
-
 		snake.insert(nx, ny);
-		snake2.insert(nx2, ny2);
         
         
 	}
