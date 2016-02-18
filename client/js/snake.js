@@ -37,7 +37,7 @@ temp,
 player1,
 player2, /* string, player IDs */
 
-name_request = false,
+name_request,
 get_direction = false,
 snake2_scored = false,
 fruit_location = false,
@@ -260,7 +260,6 @@ function init() {
     score2 = 0;
     temp = ' ';
 	grid.init(EMPTY, COLS, ROWS);
-    server.send('message', 'client');
 }
 /**
  * The game loop function, used for game updates and rendering
@@ -436,6 +435,7 @@ function connectServer() {
 	server.bind('message', function (payload) {
 	    if (name_request == true) {
 	        player2 = payload;
+	        server.send('message', 'client');
 	        name_request = false;
         }
         else if (payload == "ready") {
@@ -486,7 +486,7 @@ function connectServer() {
             server.send('message', player1);
             // Send player id to server
             showConnectionStatus(true); // Update the notification strip          
-            main(); // start the game 
+             // start the game 
         }
         
         // Connection rejected message: let's display the message panel
