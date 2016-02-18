@@ -164,15 +164,15 @@ snake2 = {
     
     update: function (x) {
         // 1. Iterate through current queue and set each corresponding grid cell empty
-        for (int i  = 0; i < this._queue.size; i++ ) {
+        for (var i  = 0; i < this._queue.size; i++ ) {
             grid.set(EMPTY, this._queue[i].x, this._queue[i].y);
         }
         
         // 2. Replace current queue with new queue, x
         this._queue = x;
 
-        // 3. Iterate through new queue and set each "" to snake2
-        for (int i  = 0; i < this._queue.size; i++ ) {
+        // 3. Iterate through new queue and set each corresponding grid cell to snake2
+        for (var i  = 0; i < this._queue.size; i++ ) {
             grid.set(SNAKE2, this._queue[i].x, this._queue[i].y);
         }
 
