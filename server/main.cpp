@@ -51,7 +51,7 @@ void openHandler(int clientID){
 /* called when a client disconnects */
 void closeHandler(int clientID){
     ostringstream os;
-    os << "Stranger " << clientID << " has leaved.";
+    os << "Stranger " << clientID << " has left.";
 
     vector<int> clientIDs = server.getClientIDs();
     for (int i = 0; i < clientIDs.size(); i++){
@@ -165,10 +165,9 @@ void messageHandler(int clientID, string message) {
 		}
 		if (!player1_locs.empty() && !player2_locs.empty()) {
 			location fruit = setFood(player1_locs, player2_locs);
-			string playerOneFruitString = to_string(fruit.first) + "/" + to_string(fruit.second);
-			string playerTwoFruitString = to_string(ROWS - fruit.first - 1) + "/" + to_string(COLS - fruit.second - 1);
-			server.wsSend(0, playerOneFruitString);
-			server.wsSend(1, playerTwoFruitString);
+			string fruitString = to_string(fruit.first) + "/" + to_string(fruit.second);
+			server.wsSend(0, fruitString);
+			server.wsSend(1, fruitString);
 		}
 		*/
 	}
