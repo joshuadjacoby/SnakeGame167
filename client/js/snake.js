@@ -3,7 +3,7 @@
 //Jonathan Saavedra
 var
 /**
- * Constats
+ * Constants
  */
 COLS = 26,
 ROWS = 26,
@@ -161,8 +161,22 @@ snake2 = {
         this._queue = [];
         this.insert(x, y);
     },
+    
     update: function (x) {
+        // 1. Iterate through current queue and set each corresponding grid cell empty
+        for (int i  = 0; i < this._queue.size; i++ ) {
+            grid.set(EMPTY, this._queue[i].x, this._queue[i].y);
+        }
+        
+        // 2. Replace current queue with new queue, x
         this._queue = x;
+
+        // 3. Iterate through new queue and set each "" to snake2
+        for (int i  = 0; i < this._queue.size; i++ ) {
+            grid.set(SNAKE2, this._queue[i].x, this._queue[i].y);
+        }
+
+        // 4. Update the 'last' pointer
         this.last = this._queue[0];
     },
     /**
@@ -302,8 +316,6 @@ function update() {
 		// head
 		var nx = snake.last.x;
 		var ny = snake.last.y;
-		var nx2 = snake2.last.x;
-		var ny2 = snake2.last.y;
 
 		// updates the position depending on the snake direction
 		switch (snake.direction) {
@@ -351,10 +363,7 @@ function update() {
 		// add a snake id at the new position and append it to
 		// the snake queue
 		grid.set(SNAKE, nx, ny);
-		grid.set(SNAKE2, nx2, ny2);
-
 		snake.insert(nx, ny);
-		snake2.insert(nx2, ny2);
         
         
 	}
