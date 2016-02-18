@@ -164,15 +164,15 @@ snake2 = {
     
     update: function (x) {
         // 1. Iterate through current queue and set each corresponding grid cell empty
-        for (var i  = 0; i < this._queue.size; i++ ) {
+       
+        for (var i  = 0; i < this._queue.length; i++ ) {
             grid.set(EMPTY, this._queue[i].x, this._queue[i].y);
         }
-        
         // 2. Replace current queue with new queue, x
         this._queue = x;
 
         // 3. Iterate through new queue and set each corresponding grid cell to snake2
-        for (var i  = 0; i < this._queue.size; i++ ) {
+        for (var i  = 0; i < this._queue.length; i++ ) {
             grid.set(SNAKE2, this._queue[i].x, this._queue[i].y);
         }
 
@@ -316,6 +316,8 @@ function update() {
 		// head
 		var nx = snake.last.x;
 		var ny = snake.last.y;
+		var nx2 = snake2.last.x;
+		var ny2 = snake2.last.y;
 
 		// updates the position depending on the snake direction
 		switch (snake.direction) {
@@ -340,7 +342,7 @@ function update() {
 			0 > ny2 || ny2 > grid.height - 1 || grid.get(nx2, ny2) === SNAKE2 || grid.get(nx, ny) === SNAKE2 ||
 			grid.get(nx2, ny2) === SNAKE
 		) {
-			endGame();
+			//endGame();
 		}
 		// check wheter the new position are on the fruit item
 		if (grid.get(nx, ny) === FRUIT) {
@@ -354,12 +356,6 @@ function update() {
 			grid.set(EMPTY, tail.x, tail.y);
 		}
 
-		if (snake2_scored == false){
-		    var tail = snake2.remove();
-		    grid.set(EMPTY, tail.x, tail.y);
-		}else{
-	        snake2_scored = false;
-	    }
 		// add a snake id at the new position and append it to
 		// the snake queue
 		grid.set(SNAKE, nx, ny);
