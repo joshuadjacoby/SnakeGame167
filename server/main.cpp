@@ -33,8 +33,8 @@ void openHandler(int clientID){
     if (server.getClientIDs().size() == 2) {
         player_scores[0] = 0;
 		player_scores[1] = 0;
-		player1queue = "[{x:23,y:0}]";
-		player2queue = "[{x:13,y:0}]";
+		player1queue = "[{\"x\":13, \"y\" : 25}]";
+		player2queue = "[{\"x\":13, \"y\" : 0}]";
 		player1nameset = false;
 		player2nameset = false;
 		vector<int> clientIDs = server.getClientIDs();
@@ -137,11 +137,11 @@ void messageHandler(int clientID, string message) {
 	else {
 		cout << message << endl;
 		if (clientID == 0) {
-			//player1queue = message;
+			player1queue = message;
 			server.wsSend(0, player2queue);
 		}
 		if (clientID == 1) {
-			//player2queue = message;
+			player2queue = message;
 			server.wsSend(1, player1queue);
 		}
 		/*

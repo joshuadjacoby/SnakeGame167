@@ -130,6 +130,10 @@ snake = {
 		this._queue.unshift({x:x, y:y});
 		this.last = this._queue[0];
 	},
+
+	update: function(x){
+	    this._queue = x;
+	},
 	/**
 	 * Removes and returns the first element in the queue.
 	 *
@@ -156,6 +160,10 @@ snake2 = {
         this.direction = d;
         this._queue = [];
         this.insert(x, y);
+    },
+    update: function (x) {
+        this._queue = x;
+        this.last = this._queue[0];
     },
     /**
 	 * Adds an element to the queue
@@ -187,7 +195,7 @@ snake2 = {
 function setFood() {
 	//var empty = [];
 	// iterate through the grid and find all empty cells
-    get_direction = false;
+    get_direction = true;
     //fruit_location = true;
     server.send('message', JSON.stringify(snake._queue));
     
@@ -288,7 +296,7 @@ function update() {
     // each  frames update the game state.
 
 	
-	//server.send('message', JSON.stringify(snake._queue));
+	server.send('message', JSON.stringify(snake._queue));
 	if (frames%20 === 0) {
 		// pop the last element from the snake queue i.e. the
 		// head
@@ -320,7 +328,7 @@ function update() {
 			0 > ny2 || ny2 > grid.height - 1 || grid.get(nx2, ny2) === SNAKE2 || grid.get(nx, ny) === SNAKE2 ||
 			grid.get(nx2, ny2) === SNAKE
 		) {
-			//endGame();
+			endGame();
 		}
 		// check wheter the new position are on the fruit item
 		if (grid.get(nx, ny) === FRUIT) {
@@ -467,7 +475,8 @@ function connectServer() {
            loop();
         }
 	    else if (get_direction == true) {
-	        snake2._queue = JSON.parse(payload);
+	        var queue = JSON.parse(payload);
+	        snake2.update(queue);
 	    }
         // Connection ready message: let's start playing the game
         else if (payload == "CONNECTION_READY") {
