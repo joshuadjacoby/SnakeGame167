@@ -279,30 +279,18 @@ function update() {
 	// changing direction of the snake depending on which keys
     // that are pressed
    
-	if (keystate[KEY_LEFT] && snake.direction !== RIGHT) {
+	if ((keystate[KEY_LEFT] || keystate[KEY_A]) && snake.direction !== RIGHT) {
 		snake.direction = LEFT;
 	}
-	if (keystate[KEY_UP] && snake.direction !== DOWN) {
+	if ((keystate[KEY_UP] || keystate[KEY_W]) && snake.direction !== DOWN) {
 		snake.direction = UP;
 	}
-	if (keystate[KEY_RIGHT] && snake.direction !== LEFT) {
+	if ((keystate[KEY_RIGHT] || keystate[KEY_D]) && snake.direction !== LEFT) {
 		snake.direction = RIGHT;
 	}
-	if (keystate[KEY_DOWN] && snake.direction !== UP) {
+	if ((keystate[KEY_DOWN] || keystate[KEY_S]) && snake.direction !== UP) {
 		snake.direction = DOWN;
 	}
-	if (keystate[KEY_A] && snake.direction !== RIGHT) {
-	    snake.direction = LEFT;
-	}
-	if (keystate[KEY_W] && snake.direction !== DOWN) {
-	    snake.direction = UP;
-	}
-	if (keystate[KEY_D] && snake.direction !== LEFT) {
-	    snake.direction = RIGHT;
-	}
-	if (keystate[KEY_S] && snake.direction !== UP) {
-	    snake.direction = DOWN;
-    }
    
     // each  frames update the game state.
 
