@@ -69,15 +69,14 @@ location setFood(vector<location> a, vector<location> b) {
 
 	for (int x = 0; x < ROWS; x++) {
 		for (int y = 0; y < COLS; y++) {
-			if ((find(a.begin(), a.end(), location(x, y)) != a.end()) && (find(b.begin(), b.end(), location(x, y)) != b.end())) {
-				empty.push_back(location(x, y));
-			}
+			if ((find(a.begin(), a.end(), location(x, y)) == a.end()) && (find(b.begin(), b.end(), location(x, y)) == b.end()))
+					empty.push_back(location(x, y));
 		}
 	}
 
 	//chooses a random cell
-	//location randpos = empty[rand() % empty.size()];
-	return location(1,5);
+	location randpos = empty[rand() % empty.size()];
+	return randpos;
 
 }
 
@@ -133,31 +132,26 @@ void messageHandler(int clientID, string message) {
 		return;
 	}
 
-	
-	else {
-		cout << message << endl;
-		if (clientID == 0) {
-			player1queue = message;
-			server.wsSend(0, player2queue);
-		}
-		if (clientID == 1) {
-			player2queue = message;
-			server.wsSend(1, player1queue);
-		}
-		/*
-		  
-		string s = message;
+	if (message == "fruit") {
+		string s;
+		if (clientID == 0)
+			s = player1queue;
+		else
+			s = player2queue;
 		string delimiter = ":";
 
-		size_t pos = 0;
+		size_t startPos = 0;
+		size_t endPos = 0;
 		string x;
 		string y;
-		while ((pos = s.find(delimiter)) != string::npos) {
-			x = s[pos + delimiter.length()];
-			s.erase(0, pos + delimiter.length());
-			pos = s.find(delimiter);
-			y = s[pos + delimiter.length()];
-			s.erase(0, pos + delimiter.length());
+		while ((startPos = s.find(delimiter)) != string::npos) {
+			endPos = s.find(",");
+			x = s.substr(startPos + delimiter.length(), endPos);
+			s.erase(0, endPos);
+			startPos = s.find(delimiter);
+			endPos = s.find("}");
+			y = s.substr(startPos + delimiter.length(), endPos);
+			s.erase(0, endPos);
 			if (clientID == 0)
 				player1_locs.push_back(make_pair(stoi(x), stoi(y)));
 			else
@@ -169,7 +163,17 @@ void messageHandler(int clientID, string message) {
 			server.wsSend(0, fruitString);
 			server.wsSend(1, fruitString);
 		}
-		*/
+	}
+	
+	else {
+		if (clientID == 0) {
+			player1queue = message;
+			server.wsSend(0, player2queue);
+		}
+		if (clientID == 1) {
+			player2queue = message;
+			server.wsSend(1, player1queue);
+		}
 	}
 
 

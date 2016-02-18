@@ -195,9 +195,9 @@ snake2 = {
 function setFood() {
 	//var empty = [];
 	// iterate through the grid and find all empty cells
-    get_direction = true;
-    //fruit_location = true;
-    server.send('message', JSON.stringify(snake._queue));
+    get_direction = false;
+    fruit_location = true;
+    server.send('message', 'fruit');
     
     /*
 	for (var x=0; x < grid.width; x++) {
@@ -279,20 +279,18 @@ function update() {
 	if (keystate[KEY_DOWN] && snake.direction !== UP) {
 		snake.direction = DOWN;
 	}
-/*
-	if (keystate[KEY_A] && snake2.direction !== RIGHT) {
-	    snake2.direction = LEFT;
+	if (keystate[KEY_A] && snake.direction !== RIGHT) {
+	    snake.direction = LEFT;
 	}
-	if (keystate[KEY_W] && snake2.direction !== DOWN) {
-	    snake2.direction = UP;
+	if (keystate[KEY_W] && snake.direction !== DOWN) {
+	    snake.direction = UP;
 	}
-	if (keystate[KEY_D] && snake2.direction !== LEFT) {
-	    snake2.direction = RIGHT;
+	if (keystate[KEY_D] && snake.direction !== LEFT) {
+	    snake.direction = RIGHT;
 	}
-	if (keystate[KEY_S] && snake2.direction !== UP) {
-	    snake2.direction = DOWN;
-	}
-    */
+	if (keystate[KEY_S] && snake.direction !== UP) {
+	    snake.direction = DOWN;
+    }
     // each  frames update the game state.
 
 	
@@ -328,7 +326,7 @@ function update() {
 			0 > ny2 || ny2 > grid.height - 1 || grid.get(nx2, ny2) === SNAKE2 || grid.get(nx, ny) === SNAKE2 ||
 			grid.get(nx2, ny2) === SNAKE
 		) {
-			endGame();
+			//endGame();
 		}
 		// check wheter the new position are on the fruit item
 		if (grid.get(nx, ny) === FRUIT) {
@@ -438,6 +436,10 @@ function connectServer() {
 	        player2 = payload;
 	        name_request = false;
         }
+        else if (get_direction == true) {
+	        var queue = JSON.parse(payload);
+	        snake2.update(queue);
+	    }
         else if (fruit_location == true) {
             var xy = payload.split("/");
             grid.set(FRUIT, parseInt(xy[0]), parseInt(xy[1]));
@@ -460,7 +462,6 @@ function connectServer() {
 	       grid.set(SNAKE, sp.x, sp.y);
 	       grid.set(SNAKE2, sp2.x, sp2.y);
 	       setFood();
-	       get_direction = true;
            loop();
         }
 	    else if (payload == "1") {
@@ -471,13 +472,8 @@ function connectServer() {
 	       grid.set(SNAKE2, sp.x, sp.y);
 	       grid.set(SNAKE, sp2.x, sp2.y);
 	       setFood();
-	       get_direction = true;
            loop();
         }
-	    else if (get_direction == true) {
-	        var queue = JSON.parse(payload);
-	        snake2.update(queue);
-	    }
         // Connection ready message: let's start playing the game
         else if (payload == "CONNECTION_READY") {
             server.send('message', player1);  // Send player id to server
