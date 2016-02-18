@@ -277,7 +277,8 @@ function loop() {
 function update() {
 	frames++;
 	// changing direction of the snake depending on which keys
-	// that are pressed
+    // that are pressed
+   
 	if (keystate[KEY_LEFT] && snake.direction !== RIGHT) {
 		snake.direction = LEFT;
 	}
@@ -302,6 +303,7 @@ function update() {
 	if (keystate[KEY_S] && snake.direction !== UP) {
 	    snake.direction = DOWN;
     }
+   
     // each  frames update the game state.
 
 	
@@ -439,6 +441,7 @@ function connectServer() {
 	        name_request = false;
         }
 	    else if (payload == "ready") {
+	        alert(payload);
 	        setFood();
             loop();
         }
