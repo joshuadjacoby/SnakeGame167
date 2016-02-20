@@ -19,7 +19,8 @@ var ui = {
 
         // Set event handler for restart button
         $("#restart-btn").click(function() {
-             location.reload();
+             $("#msg-panel").hide();
+             $("#settings-form").show();
         });
 
         // Set event handler for return key
