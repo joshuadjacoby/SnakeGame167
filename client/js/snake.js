@@ -40,6 +40,8 @@ temp,
 player1, 
 player2, /* string, player IDs */
 
+running, /* boolean, flags if game is running or not */
+
 serverIP, /* number */
 port,
 
@@ -225,6 +227,7 @@ function main() {
 	});
 	// intatiate game objects and starts the game loop
 	init();
+	running = true;
 	loop();
 }
 /**
@@ -243,10 +246,16 @@ function init() {
 	grid.set(SNAKE2, sp2.x, 0);
 	setFood();
 }
+
 /**
  * The game loop function, used for game updates and rendering
  */
 function loop() {
+    // Only run this loop if game is running
+    if (!running) {
+        return;
+    }
+
 	update();
 	draw();
 	// When ready to redraw the canvas call the loop function
@@ -287,7 +296,7 @@ function update() {
 	}
 
 	// each  frames update the game state.
-	if (frames%7 === 0) {
+	if (frames%20 === 0) {
 		// pop the last element from the snake queue i.e. the
 		// head
 		var nx = snake.last.x;
@@ -331,7 +340,8 @@ function update() {
 			0 > ny2 || ny2 > grid.height - 1 || grid.get(nx2, ny2) === SNAKE2 || grid.get(nx, ny) === SNAKE2 ||
 			grid.get(nx2, ny2) === SNAKE
 		) {
-			ui.endGame(player1, player2, score, score2);
+			running = false; // stop the gameplay
+			ui.endGame(player1, player2, score, score2); // show the end game screen
 		}
 		// check wheter the new position are on the fruit item
 		if (grid.get(nx, ny) === FRUIT) {

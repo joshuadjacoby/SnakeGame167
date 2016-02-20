@@ -19,7 +19,7 @@ var ui = {
 
         // Set event handler for restart button
         $("#restart-btn").click(function() {
-            location.reload();
+             location.reload();
         });
 
         // Set event handler for return key
