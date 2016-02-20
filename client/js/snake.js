@@ -1,6 +1,9 @@
-//Joshua Jacoby
-//Steven Ratcliff
-//Jonathan Saavedra
+/*
+Joshua Jacoby
+Steven Ratcliff
+Jonathan Saavedra
+*/
+
 var
 /**
  * Constats
@@ -328,7 +331,7 @@ function update() {
 			0 > ny2 || ny2 > grid.height - 1 || grid.get(nx2, ny2) === SNAKE2 || grid.get(nx, ny) === SNAKE2 ||
 			grid.get(nx2, ny2) === SNAKE
 		) {
-			endGame();
+			ui.endGame(player1, player2, score, score2);
 		}
 		// check wheter the new position are on the fruit item
 		if (grid.get(nx, ny) === FRUIT) {
@@ -336,6 +339,7 @@ function update() {
 		    server.change('player1scored');
 		    server.send('player1scored','p1score');
 			setFood();
+			
 		} else {
 			// take out the first item from the snake queue i.e
 			// the tail and remove id from grid
@@ -363,6 +367,7 @@ function update() {
 		snake2.insert(nx2, ny2);
 	}
 }
+
 /**
  * Render the grid to the canvas.
  */
@@ -431,7 +436,7 @@ function connectServer() {
 
 	// (2) Disconnection event
 	server.bind('close', function( data ) {
-        showConnectionStatus(false); // Update the notification strip
+        ui.showConnectionStatus(false); // Update the notification strip
         // Stop the game, if it's running?
         // ...
         // ...
@@ -444,14 +449,14 @@ function connectServer() {
         if (payload == "CONNECTION_READY") {
             server.send('message', player1);  // Send player id to server
             server.send('message', player2);  // ""
-            showConnectionStatus(true); // Update the notification strip          
+            ui.showConnectionStatus(true); // Update the notification strip          
             main(); // start the game 
         }
         
         // Connection rejected message: let's display the message panel
         // to inform the user
         if (payload == "CONNECTION_REJECTED") {
-            showMessagePanel("Connection rejected by server", "Please try again later", "Try again");
+            ui.showMessagePanel("Connection rejected by server", "Please try again later", "Try again");
             document.getElementById("restart-btn").focus();    
         }
  	});
@@ -468,66 +473,3 @@ function connectServer() {
     server.connect();
 }
 
-// Game over
-function endGame() {
-    // Show the endgame message
-    var msg;
-
-    if (score == score2) {
-        msg = "The game was a " + score + "-" + score2 + " tie.";
-    }
-    else if (score > score2) {
-        msg = "" + player1 + " won the game, " + score + "-" + score2;
-    }
-    else {
-        msg = "" + player2 + " won the game, " + score2 + "-" + score;
-    }
-
-    showMessagePanel("Game over", msg, "Play again");
-    
-    // Disconnect from server
-    server.disconnect();
-}
-
-
-// Shows the message screen with the given contents
-function showMessagePanel(headline, body, buttonText) {
-    $("#msg-headline").html(headline); // Set the H1 text
-    $("#msg-body").html(body); // Set the p text
-    $("#restart-btn").val(buttonText); // Set the restart button text
-
-    $(canvas).remove(); // Delete the game canvas, if we have one
-    $("form").hide(); // Hide the settings form
-    
-    $("#msg-panel").show(); // Show the message panel
-}
-
-// Show the current connection status
-function showConnectionStatus(isConnected) {
-    if (isConnected) {
-        $("#connection-status").css("background-color", "green"); 
-        $("#connection-status").html("Connected!");
-    }
-    else {
-        $("#connection-status").css("background-color", "red"); 
-        $("#connection-status").html("No server connection");        
-    }
-}
-
-// Set click event handlers
-$(document).ready(function(e) {
-
-    $("#submit").click(function() {
-        connectServer();
-    });
-    
-    $("#restart-btn").click(function() {
-       location.reload();
-    });
-});
-
-$(document).keypress(function(e) {
-    if(e.which == 13 && document.activeElement.tagName == "INPUT") {
-        connectServer();
-    }
-});
