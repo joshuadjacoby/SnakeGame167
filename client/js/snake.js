@@ -42,10 +42,7 @@ player2, /* string, player IDs */
 
 running, /* boolean, flags if game is running or not */
 
-serverIP, /* number */
-port,
-
-server; /* type: FancyWebSocket */
+network; /* type: GameNetwork */
 
 /**
  * Grid datastructor, usefull in games where the game world is
@@ -344,10 +341,11 @@ function update() {
 			ui.endGame(player1, player2, score, score2); // show the end game screen
 		}
 		// check wheter the new position are on the fruit item
+		
+		/* EVENT: PLAYER 1 HAS SCORED */
 		if (grid.get(nx, ny) === FRUIT) {
 		    // increment the score and sets a new fruit position
-		    server.change('player1scored');
-		    server.send('player1scored','p1score');
+            network.reportScore();
 			setFood();
 			
 		} else {
@@ -357,11 +355,11 @@ function update() {
 			grid.set(EMPTY, tail.x, tail.y);
 		}
 
+        /* EVENT: PLAYER 2 HAS SCORED */
 		if (grid.get(nx2, ny2) === FRUIT) {
 		    // increment the score and sets a new fruit position
-		    server.change('player2scored');
-		    server.send('player2scored','p2score');
 		    setFood();
+
 		} else {
 		    // take out the first item from the snake queue i.e
 		    // the tail and remove id from grid
@@ -415,71 +413,3 @@ function draw() {
 	ctx.fillText(player2 + " score: " + score2, 180, canvas.height - 10);
 
 }
-
-
-// Connect to server and prepare to start game
-function connectServer() {
-
-    // Initialize variables
-    serverIP = $("#server-ip").val();
-    port = $("#port").val();
-    player1 = $("#player1").val();
-    player2 = $("#player2").val();
-      
-    // Hide the message panel
-    $("#msg-panel").hide();
-    $("form").hide();
-    
-    // Create a new socket
-    server = new FancyWebSocket('ws://'+ serverIP + ':' + port);
-    
-    /*
-     * BIND CALLBACKS FOR SOCKET EVENTS -- 3 BINDINGS:
-     */
-    
-	// (1) Open event -- We're connected!
-	server.bind('open', function() {
-        // Don't start the game yet -- we're going to wait to receive a "connection ready" message from the server
-        // This prevents us from launching the game too soon, because the server might need to 
-        // disconnect us if too many players are connected already 
-	});
-
-	// (2) Disconnection event
-	server.bind('close', function( data ) {
-        ui.showConnectionStatus(false); // Update the notification strip
-        // Stop the game, if it's running?
-        // ...
-        // ...
-	});
-
-	// (3) Message event -- message received from server
-	server.bind('message', function( payload ) {
-        
-        // Connection ready message: let's start playing the game
-        if (payload == "CONNECTION_READY") {
-            server.send('message', player1);  // Send player id to server
-            server.send('message', player2);  // ""
-            ui.showConnectionStatus(true); // Update the notification strip          
-            main(); // start the game 
-        }
-        
-        // Connection rejected message: let's display the message panel
-        // to inform the user
-        if (payload == "CONNECTION_REJECTED") {
-            ui.showMessagePanel("Connection rejected by server", "Please try again later", "Try again");
-            document.getElementById("restart-btn").focus();    
-        }
- 	});
-
-	server.bind('player1scored', function (payload) {
-	    score = payload;
-	});
-
-	server.bind('player2scored', function (payload) {
-	    score2 = payload;
-	});
-    
-    // Try to connect...   
-    server.connect();
-}
-

@@ -7,29 +7,21 @@ Jonathan Saavedra
 /* UI Object */
 var ui = {
 
-    /* Performs any intial UI initialization required (setting event handlers, etc.) 
-        This should be called from inside a $(document.ready()) block.
-    */
-        
-    init: function() {
-        // Set event handler for submit button
-        $("#submit").click(function() {
-            connectServer();
-        });
+    // Submit button action: instantiates a GameNetwork and attempts to connect.
+    submitButton: function() {
+        // Hide the message panel
+        $("#msg-panel").hide();
+        $("form").hide();
 
-        // Set event handler for restart button
-        $("#restart-btn").click(function() {
-             $("#msg-panel").hide();
-             $("#settings-form").show();
-        });
+        // Set player name (currently, global variable)
+        player1 = $("#player1").val();
+        player2 = $("#player2").val();
 
-        // Set event handler for return key
-        $(document).keypress(function(e) {
-            if(e.which == 13 && document.activeElement.tagName == "INPUT") {
-                connectServer();
-            }
-        });
+        // Instantiate network and connect
+        network = new GameNetwork($("#server-ip").val(), $("#port").val());
+        network.connectServer();
     },
+      
     
     /* Shows the message screen with the given contents */
     showMessagePanel: function(headline, body, buttonText) {
@@ -37,7 +29,7 @@ var ui = {
         $("#msg-body").html(body); // Set the p text
         $("#restart-btn").val(buttonText); // Set the restart button text
     
-        $(canvas).remove(); // Delete the game canvas, if we have one
+        $("canvas").remove(); // Delete the game canvas, if we have one
         $("form").hide(); // Hide the settings form
         
         $("#msg-panel").show(); // Show the message panel
@@ -79,7 +71,23 @@ var ui = {
 
 /* Document ready: this code executes as soon as the DOM has loaded  */
 $(document).ready(function() {
-    ui.init();
+    // Set event handler for submit button
+    $("#submit").click(function() {
+        ui.submitButton();
+    });
+    
+    // Set event handler for restart button
+    $("#restart-btn").click(function() {
+         $("#msg-panel").hide();
+         $("#settings-form").show();
+    });
+    
+    // Set event handler for return key
+    $(document).keypress(function(e) {
+        if(e.which == 13 && document.activeElement.tagName == "INPUT") {
+            ui.submitButton();
+        }
+    });    
 });
 
 
