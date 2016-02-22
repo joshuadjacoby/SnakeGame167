@@ -14,8 +14,7 @@ var ui = {
         $("form").hide();
 
         // Set player name (currently, global variable)
-        player1 = $("#player1").val();
-        player2 = $("#player2").val();
+        myName = $("#player1").val();
 
         // Instantiate network and connect
         network = new GameNetwork($("#server-ip").val(), $("#port").val());

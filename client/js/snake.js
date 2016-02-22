@@ -11,7 +11,7 @@ var
 COLS = 26,
 ROWS = 26,
 EMPTY = 0,
-SNAKE = 1,
+SNAKE1 = 1,
 FRUIT = 2,
 SNAKE2 = 3,
 LEFT  = 0,
@@ -33,12 +33,18 @@ canvas,	  /* HTMLCanvas */
 ctx,	  /* CanvasRenderingContext2d */
 keystate, /* Object, used for keyboard inputs */
 frames,   /* number, used for animation */
-score2,
-score,	  /* number, keep track of the player score */
 temp,
 
+myName,
 player1, 
-player2, /* string, player IDs */
+player2, /* string, player names */
+
+score1, /* int: player scores */
+score2,
+
+playerNumber, /* int : Player number (1 or 2) assigned from server */
+newServerUpdate, /* message object: a server game update ready to be processed */ 
+applePosition, /* (x, y) coordinate pair representing the apple location */
 
 running, /* boolean, flags if game is running or not */
 
@@ -92,13 +98,15 @@ grid = {
 		return this._grid[x][y];
 	}
 }
+
 /**
  * The snake, works as a queue (FIFO, first in first out) of data
  * with all the current positions in the grid with the snake id
  *
- * @type {Object}
+ *  Snake 1 is the snake corresponding to Player 1 
+ *  (which may or may not be the local player -- depends on the assignment from server) 
  */
-snake = {
+snake1 = {
 	direction: null, /* number, the direction */
 	last: null,		 /* Object, pointer to the last element in
 						the queue */
@@ -136,7 +144,11 @@ snake = {
 		return this._queue.pop();
 	}
 }
-snake2 = {
+
+/*  Snake 2 is the snake corresponding to Player 2 
+ *  (which may very well be this client - depends on server assignment) 
+ */
+    snake2 = {
     direction: null, /* number, the direction */
     last: null,		 /* Object, pointer to the last element in
 						the queue */
@@ -175,31 +187,7 @@ snake2 = {
     }
 };
 
-function log(text) {
-    $log = $('#log');
-    //Add text to log
-    $log.append(($log.val() ? "\n" : '') + text);
-    temp = $log;
-}
 
-
-/**
- * Set a food id at a random free cell in the grid
- */
-function setFood() {
-	var empty = [];
-	// iterate through the grid and find all empty cells
-	for (var x=0; x < grid.width; x++) {
-		for (var y=0; y < grid.height; y++) {
-			if (grid.get(x, y) === EMPTY) {
-				empty.push({x:x, y:y});
-			}
-		}
-	}
-	// chooses a random cell
-	var randpos = empty[Math.round(Math.random()*(empty.length - 1))];
-	grid.set(FRUIT, randpos.x, randpos.y);
-}
 /**
  * Starts the game
  */
@@ -227,21 +215,15 @@ function main() {
 	running = true;
 	loop();
 }
+
 /**
  * Resets and inits game objects
  */
 function init() {
-    score = 0;
+    score1 = 0;
     score2 = 0;
     temp = ' ';
 	grid.init(EMPTY, COLS, ROWS);
-	var sp = { x: Math.floor(COLS / 2), y: ROWS - 1 };
-	var sp2 = { x: Math.floor(COLS / 2), y: 0 };
-	snake.init(UP, sp.x, sp.y);
-	snake2.init(DOWN, sp2.x, 0);
-	grid.set(SNAKE, sp.x, sp.y);
-	grid.set(SNAKE2, sp2.x, 0);
-	setFood();
 }
 
 /**
@@ -252,128 +234,114 @@ function loop() {
     if (!running) {
         return;
     }
-
+	
+	checkKeyState();
 	update();
 	draw();
+	
 	// When ready to redraw the canvas call the loop function
 	// first. Runs about 60 frames a second
 	window.requestAnimationFrame(loop, canvas);
 }
+
 /**
- * Updates the game logic
+ * Checks the key state and updates the local player's direction
+ */
+function checkKeyState() {
+	
+    // CAUTION: This section is a little tricky, becasue we need to know
+    // which snake we are "driving." Are we snake1, or snake2?
+    // That depends on the assignment we received from the server.
+
+    // First, let's determine our current direction, since it affects
+    // where the snake is allowed to turn
+    var direction;
+    
+    if (playerNumber == 1) {
+        direction = snake1.direction;     
+    }
+    else {
+        direction = snake2.direction;
+    }
+
+    var newDirection = direction;
+
+    // Read the keystate and choose a direction    
+	if (keystate[KEY_LEFT] && direction !== RIGHT) {
+		newDirection = LEFT;
+	}
+	if (keystate[KEY_UP] && direction !== DOWN) {
+		newDirection = UP;
+	}
+	if (keystate[KEY_RIGHT] && direction !== LEFT) {
+		newDirection = RIGHT;
+	}
+	if (keystate[KEY_DOWN] && direction !== UP) {
+		newDirection = DOWN;
+	}
+	
+	// If the direction has changed, we need to update our 
+	// status and then tell the server.
+	if (direction != newDirection) {
+    	    // Update status
+    	    if (playerNumber == 1) {
+        	    snake1.direction = newDirection;
+    	    }
+    	    else {
+        	    snake2.direction = newDirection;
+    	    }
+    	    
+    	    // Build a player status object and send it to the server
+    	    network.sendUpdate(playerStatus());
+  	}	
+}
+
+/** Updates the game state, if an update is available from the server.
+ *
+ *  Status object contains at least the following key-value pairs 
+ *  (more can be added later, as client functionality grows):
+ *
+ *  "MESSAGE_TYPE" = "SERVER_UPDATE",
+ *  "CURRENT_FRAME" = the current frame number
+ *  "GAME_STATUS" = true/false whether the game is still active
+ *  "PLAYER_1_NAME" = player 1's name
+ *  "PLAYER_2_NAME" = player 2's name
+ *  "PLAYER_1_SCORE" = player 1's score
+ *  "PLAYER_2_SCORE" = player 2's score
+ *  "PLAYER_1_QUEUE" = a JSON object containing P1's queue
+ *  "PLAYER_2_QUEUE" = a JSON object containing P2's queue
  */
 function update() {
-	frames++;
-	// changing direction of the snake depending on which keys
-	// that are pressed
-	if (keystate[KEY_LEFT] && snake.direction !== RIGHT) {
-		snake.direction = LEFT;
-	}
-	if (keystate[KEY_UP] && snake.direction !== DOWN) {
-		snake.direction = UP;
-	}
-	if (keystate[KEY_RIGHT] && snake.direction !== LEFT) {
-		snake.direction = RIGHT;
-	}
-	if (keystate[KEY_DOWN] && snake.direction !== UP) {
-		snake.direction = DOWN;
-	}
+    if (newServerUpdate != null && newServerUpdate != undefined) {
 
-	if (keystate[KEY_A] && snake2.direction !== RIGHT) {
-	    snake2.direction = LEFT;
-	}
-	if (keystate[KEY_W] && snake2.direction !== DOWN) {
-	    snake2.direction = UP;
-	}
-	if (keystate[KEY_D] && snake2.direction !== LEFT) {
-	    snake2.direction = RIGHT;
-	}
-	if (keystate[KEY_S] && snake2.direction !== UP) {
-	    snake2.direction = DOWN;
-	}
+        // Update the variables
+        player1 = newServerUpdate["PLAYER_1_NAME"];
+        player2 = newServerUpdate["PLAYER_2_NAME"];
+        score1 = newServerUpdate["PLAYER_1_SCORE"];
+        score2 = newServerUpdate["PLAYER_2_SCORE"];
+        snake1._queue = newServerUpdate["PLAYER_1_QUEUE"];
+        snake2._queue = newServerUpdate["PLAYER_2_QUEUE"];
+        applePosition = newServerUpdate["APPLE_POSITION"];
+        
+        // Clear the grid
+        	grid.init(EMPTY, COLS, ROWS);
+        	
+        	// Write snake 1 onto the grid
+        	for (var i = 0; snake1._queue != null && i < snake1._queue.length; i++) {
+            	grid.set(SNAKE1, snake1._queue[i]["x"], snake1._queue[i]["y"]);
+        	}
 
-	// each  frames update the game state.
-	if (frames%20 === 0) {
-		// pop the last element from the snake queue i.e. the
-		// head
-		var nx = snake.last.x;
-		var ny = snake.last.y;
-		var nx2 = snake2.last.x;
-		var ny2 = snake2.last.y;
-
-		// updates the position depending on the snake direction
-		switch (snake.direction) {
-			case LEFT:
-				nx--;
-				break;
-			case UP:
-				ny--;
-				break;
-			case RIGHT:
-				nx++;
-				break;
-			case DOWN:
-				ny++;
-				break;
-		}
-		switch (snake2.direction) {
-		    case LEFT:
-		        nx2--;
-		        break;
-		    case UP:
-		        ny2--;
-		        break;
-		    case RIGHT:
-		        nx2++;
-		        break;
-		    case DOWN:
-		        ny2++;
-		        break;
-		}
-		// checks all gameover conditions
-		if (0 > nx || nx > grid.width-1  ||
-			0 > ny || ny > grid.height-1 ||
-			grid.get(nx, ny) === SNAKE || 0 > nx2 || nx2 > grid.width - 1 ||
-			0 > ny2 || ny2 > grid.height - 1 || grid.get(nx2, ny2) === SNAKE2 || grid.get(nx, ny) === SNAKE2 ||
-			grid.get(nx2, ny2) === SNAKE
-		) {
-			running = false; // stop the gameplay
-			ui.endGame(player1, player2, score, score2); // show the end game screen
-		}
-		// check wheter the new position are on the fruit item
-		
-		/* EVENT: PLAYER 1 HAS SCORED */
-		if (grid.get(nx, ny) === FRUIT) {
-		    // increment the score and sets a new fruit position
-            network.reportScore();
-			setFood();
-			
-		} else {
-			// take out the first item from the snake queue i.e
-			// the tail and remove id from grid
-			var tail = snake.remove();
-			grid.set(EMPTY, tail.x, tail.y);
-		}
-
-        /* EVENT: PLAYER 2 HAS SCORED */
-		if (grid.get(nx2, ny2) === FRUIT) {
-		    // increment the score and sets a new fruit position
-		    setFood();
-
-		} else {
-		    // take out the first item from the snake queue i.e
-		    // the tail and remove id from grid
-		    var tail = snake2.remove();
-		    grid.set(EMPTY, tail.x, tail.y);
-		}
-		// add a snake id at the new position and append it to
-		// the snake queue
-		grid.set(SNAKE, nx, ny);
-		grid.set(SNAKE2, nx2, ny2);
-
-		snake.insert(nx, ny);
-		snake2.insert(nx2, ny2);
-	}
+        	// Write snake 2 onto the grid
+        	for (var i = 0; snake2._queue != null && i < snake2._queue.length; i++) {
+            	grid.set(SNAKE2, snake2._queue[i]["x"], snake2._queue[i]["y"]);
+        	}
+                        
+        // Write the apple onto the grid
+        grid.set(FRUIT, applePosition["x"], applePosition["y"]);
+        
+        // Delete the server update; we don't need it anymore
+        newServerUpdate = null;
+    }
 }
 
 /**
@@ -392,7 +360,7 @@ function draw() {
 				case EMPTY:
 					ctx.fillStyle = "#fff";
 					break;
-				case SNAKE:
+				case SNAKE1:
 					ctx.fillStyle = "#00f";
 					break;
 				case FRUIT:
@@ -409,7 +377,48 @@ function draw() {
 	// message to the canvas
 	ctx.fillStyle = "#000";
 	ctx.fillText(temp, 10, canvas.height - 10);
-	ctx.fillText(player1 + " score: " + score, 10, canvas.height - 10);
+	ctx.fillText(player1 + " score: " + score1, 10, canvas.height - 10);
 	ctx.fillText(player2 + " score: " + score2, 180, canvas.height - 10);
 
+}
+
+/** Initializes new player 
+    @param playernum - the player number assigned from the server (1 or 2)
+*/
+function initializePlayer(playerNum) {
+    // Set the player number
+    playerNumber = playerNum;
+
+    // Set the initial direction on the appropriate snake
+    // The local player could be either snake1 or snake2, depending.
+    if (playerNumber == 1) {        
+        snake1.direction = UP;
+    }
+    else if (playerNumber == 2) {
+        snake2.direction = DOWN;
+    }
+}
+
+
+/** Returns an object containing a Client Update message bundle.
+  * This has at least the following fields (more can be added later):
+  * "MESSAGE_TYPE" = "CLIENT_UPDATE"
+  * "CLIENT_ID" = 1 or 2
+  * "PLAYER_NAME" = (player name)
+  * "CLIENT_DIRECTION" = int (direction)
+*/
+function playerStatus() {
+    var msg = {};
+    msg["MESSAGE_TYPE"] = "CLIENT_UPDATE";
+    msg["CLIENT_ID"] = playerNumber;
+    msg["PLAYER_NAME"] = myName;
+
+    if (playerNumber == 1) {
+        msg["CLIENT_DIRECTION"] = snake1.direction;
+    }    
+    
+    else if (playerNumber == 2) {
+        msg["CLIENT_DIRECTION"] = snake2.direction;
+    }
+    return msg;
 }
