@@ -262,7 +262,7 @@ function init() {
     temp = ' ';
 	grid.init(EMPTY, COLS, ROWS);
     
-    server.send('message', 'client');
+    
 }
 /**
  * The game loop function, used for game updates and rendering
@@ -439,6 +439,10 @@ function connectServer() {
         if (name_request == true) {
 	        player2 = payload;
 	        name_request = false;
+	        server.send('message', 'client');
+        }
+        else if (message == "READY") {
+
         }
         else if (payload == "p1scored") {
             score++;
