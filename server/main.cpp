@@ -17,9 +17,22 @@ using json = nlohmann::json;
 
 webSocket server;
 
-vector<json> clientMessages; // A place to hold client messages received before a game is instantiated
 SnakeGame *game_p = NULL; // A pointer to access the SnakeGame we'll eventually instantiate
-unsigned long lastUpdateTime = 0;
+
+// This container holds player 1 and player 2's pre-game status updates, before the
+// game is instantiated. We use this container to hold the messages, and to
+// determine when both players are ready.
+vector<json> pregame_player_msgs(2);
+
+unsigned long lastUpdateTime = 0; // Keep track of when we last advanced the game state
+
+
+/** Resets, deletes any pointers and resets to NULL */
+void resetGame() {
+    delete game_p;
+    game_p = NULL;
+    pregame_player_msgs.clear();
+}
 
 
 /** Send json object as string to specified client
@@ -75,7 +88,7 @@ void closeHandler(int clientID){
     // If game is ongoing, kill it and send out
     // an error to whomever is still connected:
     if (game_p != NULL && game_p->isActive()) {
-        delete game_p;
+        resetGame();
         json errorMsg;
         errorMsg["MESSAGE_TYPE"] = "ERROR";
         errorMsg["ERROR_MSG"] = "Other player disconnected";
@@ -90,6 +103,15 @@ void closeHandler(int clientID){
 /* called when a client sends a message to the server */
 void messageHandler(int clientID, string message){
 
+    // DEBUG
+    // DEBUG
+    // DEBUG
+    cout << "Message received from socket client ID " << clientID << " :" << message << endl;
+    // DEBUG
+    // DEBUG
+    // DEBUG
+    
+    
     // Deserialize message from the string
     json msg = json::parse(message);
     
@@ -97,33 +119,29 @@ void messageHandler(int clientID, string message){
     // Step 1: Process the message
     if (msg["MESSAGE_TYPE"] == "CLIENT_UPDATE") {
         
-        // If the game is active, pass the message to the game
+        // If the game object has already been instantiated,
+        // pass the message to the game
         if (game_p != NULL) {
             game_p->handleClientInput(msg);
         }
         
-        // Otherwise, hold the message in storage
+        // Otherwise, this is a pre-game message; hold it in the
+        // appropriate slot (index 0 or 1, depending on player 1 or player 2)
         else {
-            clientMessages.push_back(msg);
+            pregame_player_msgs[clientID] = msg;
         }
     }
     
-    // Step 2: If the clientMessages vector contains 2 messages, that means
-    // both players are ready and it's time to start the game!
-    
-    if (clientMessages.size() == 2) {
-        // Instantiate a new game with the messages in the correct sequence
-        if (clientMessages[0]["CLIENT_ID"] == 1) {
-            game_p = new SnakeGame(clientMessages[0], clientMessages[1]);
-        }
-        else {
-            game_p = new SnakeGame(clientMessages[1], clientMessages[0]);
-        }
+    // Step 2: Let's now check if both players have sent us a pre-game status
+    // update. If they have, we're ready to start the game!
+    if (pregame_player_msgs[0] != NULL && pregame_player_msgs[1] != NULL) {
         
-        // Clear the stored messages
-        clientMessages.clear();
+        // Instantiate a new game using the pre-game client update messages
+        game_p = new SnakeGame(pregame_player_msgs[0], pregame_player_msgs[1]);
+        
+        // Flush the pre-game messages, since we don't need them any more
+        pregame_player_msgs.clear();
     }
-    
 }
 
 
@@ -167,6 +185,7 @@ void periodicHandler(){
         
         // Broadcast the final update to all clients
         // and then disconnect clients
+        cout << "GAME OVER BROADCASTING FINAL UPDATE" << endl;
         vector<int> clientIDs = server.getClientIDs();
         for (int i = 0; i < clientIDs.size(); i++) {
             send_json(clientIDs[i], msg);
@@ -175,6 +194,7 @@ void periodicHandler(){
         
         // Delete the game object from memory
         delete game_p;
+        game_p = NULL;
     }
 }
 

@@ -70,10 +70,10 @@ struct Player {
         newHead = queue.back();
         switch(direction) {
             case UP:
-                newHead.y++;
+                newHead.y--;
                 break;
             case DOWN:
-                newHead.y--;
+                newHead.y++;
                 break;
             case LEFT:
                 newHead.x--;

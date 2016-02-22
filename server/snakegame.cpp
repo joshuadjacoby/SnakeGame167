@@ -32,7 +32,7 @@ using namespace std;
 *  @param json - Initial status update from player 2
 */
 SnakeGame::SnakeGame(json msg1, json msg2) {
-
+    
     // Initialize player 1
     player1.playerName = msg1["PLAYER_NAME"];
     player1.direction = UP;
@@ -200,6 +200,7 @@ bool SnakeGame::collisionDetected() const {
  *  "PLAYER_2_SCORE" = player 2's score
  *  "PLAYER_1_QUEUE" = a JSON object containing P1's queue
  *  "PLAYER_2_QUEUE" = a JSON object containing P2's queue
+ *  "APPLE_POSITION" = a JSON object containing the (x,y) coords for the food
  */
 json SnakeGame::statusObject() const {
     json j;
@@ -224,12 +225,7 @@ json SnakeGame::statusObject() const {
         q2.push_back(json({ {"x", player2.queue[i].x}, {"y", player2.queue[i].y} }));
     }
     j["PLAYER_2_QUEUE"] = q2;
+    j["APPLE_POSITION"] = json({ {"x", applePosition.x}, {"y", applePosition.y} });
 
     return j;
 }
-
-
-
-
-
-

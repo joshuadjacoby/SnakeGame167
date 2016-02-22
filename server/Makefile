@@ -1,5 +1,5 @@
 CC = g++
-CFLAGS = -c -std=c++11
+CFLAGS = -c -std=c++11 -ggdb
 LDFLAGS =
 SOURCES = main.cpp websocket.cpp sha1.cpp base64.cpp snakegame.cpp
 OBJECTS = $(SOURCES:.cpp=.o)
