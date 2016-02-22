@@ -95,10 +95,10 @@ class SnakeGame {
     public:
     
     /** Public constructor. Initializes new game.
-     *  @param string - Player 1's name
-     *  @param string - Player 2's name
+     *  @param json - Initial status update from player 1
+     *  @param json - Initial status update from player 2
      */
-    SnakeGame(string, string);
+    SnakeGame(json, json);
     
     /** Receives JSON update from client and updates client's data.
      *  @param clientData - the json update message received from a client
@@ -110,6 +110,11 @@ class SnakeGame {
      *  @return a JSON object containing the complete game state after the update (to be broadcast to both players)
      */
     json update();
+    
+    /** Returns whether game is active or not
+     *  @return bool active or inactive
+     */
+    bool isActive();
     
     
     private:

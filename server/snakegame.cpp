@@ -28,22 +28,22 @@ using namespace std;
 
 
 /** Public constructor. Initializes new game.
-*  @param string - Player 1's name
-*  @param string - Player 2's name
+*  @param json - Initial status update from player 1
+*  @param json - Initial status update from player 2
 */
-SnakeGame::SnakeGame(string name1, string name2) {
+SnakeGame::SnakeGame(json msg1, json msg2) {
 
     // Initialize player 1
-    player1.playerName = name1;
+    player1.playerName = msg1["PLAYER_NAME"];
     player1.direction = UP;
     player1.score = 0;
-    player1.queue.push_back(Position(CENTER_COLUMN, ROWS - 1)); // Top row, center column
+    player1.queue.push_back(Position(CENTER_COLUMN, ROWS - 1)); // Bottom row, center column
     
     // Initialize player 2
-    player2.playerName = name2;
+    player2.playerName = msg2["PLAYER_NAME"];
     player2.direction = DOWN;
     player2.score = 0;
-    player2.queue.push_back(Position(CENTER_COLUMN, 0)); // Bottom row, center column
+    player2.queue.push_back(Position(CENTER_COLUMN, 0)); // Top row, center column
     
     // Initialize game state
     currentFrame = 0;
@@ -75,6 +75,14 @@ void SnakeGame::handleClientInput(json clientData) {
  */
 json SnakeGame::update() {
 
+    // Check to see if game is over. In this case, return a status message
+    // but don't increment the game counter or change anything else.
+    if (!gameActive) {
+        return statusObject();
+    }
+    
+    // But if the game is active, evolve the game state:
+    
     // Increment the frame counter
     currentFrame++;
     
@@ -109,6 +117,12 @@ json SnakeGame::update() {
     return statusObject();
 }
 
+/** Returns whether game is active or not
+ *  @return bool active or inactive
+ */
+bool SnakeGame::isActive() {
+    return gameActive;
+}
 
 
 
@@ -180,6 +194,8 @@ bool SnakeGame::collisionDetected() const {
  *  "MESSAGE_TYPE" = "SERVER_UPDATE",
  *  "CURRENT_FRAME" = the current frame number
  *  "GAME_STATUS" = true/false whether the game is still active
+ *  "PLAYER_1_NAME" = player 1's name
+ *  "PLAYER_2_NAME" = player 2's name
  *  "PLAYER_1_SCORE" = player 1's score
  *  "PLAYER_2_SCORE" = player 2's score
  *  "PLAYER_1_QUEUE" = a JSON object containing P1's queue
@@ -190,6 +206,8 @@ json SnakeGame::statusObject() const {
     j["MESSAGE_TYPE"] = "SERVER_UPDATE";
     j["CURRENT_FRAME"] = currentFrame;
     j["GAME_STATUS"] = gameActive;
+    j["PLAYER_1_NAME"] = player1.playerName;
+    j["PLAYER_2_NAME"] = player2.playerName;
     j["PLAYER_1_SCORE"] = player1.score;
     j["PLAYER_2_SCORE"] = player2.score;
     
