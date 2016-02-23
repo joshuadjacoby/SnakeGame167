@@ -1,6 +1,6 @@
 #include MessageDelayer.h
 
-MessageDelayer::MessageDelayer(int maxDelay){
+MessageDelayer::MessageDelayer(int maxDelay) {
     this.maxDelay = maxDelay
     nextReleaseTime = 0   // So that we can identify a brand-new MessageDelayer
 }
@@ -14,15 +14,24 @@ void MesageDelayer::putMessage(int clientID, string message) {
 
 // Fetches the next message from the MessageDelayer, if one is ready
 // (If not, a special error value is sent. )
-pair<int, string> MessageDelayer::getMessage(){
-    updateReleaseTime();
-    
-    if (isMessageReady)
+pair<int, string> MessageDelayer::getMessage() {
+    if (isMessageReady) {
+        updateReleaseTime();
         return message;
-    else
+    } else
         return pair<int, string>(-1, "");
 }
 
-bool MessageDelayer::isMessageReady(){
-    return (!messageQueue().empty() && >= nextReleaseTime)
+bool MessageDelayer::isMessageReady() {
+    return (!messageQueue().empty() && (std::chrono::system_clock::now().time_since_epoch()).count() >= nextReleaseTime)
+}
+
+// Discard all messages in the buffer
+void MessageDelayer::clear() {
+    messageQueue.clear();
+}
+
+// Calculate and set the next time a message will be ready to be released
+void MessageDelayer::updateReleaseTime(){
+    nextReleaseTime = std::chrono::system_clock::now().time_since_epoch()).count() + (rand() % maxDelay);
 }
