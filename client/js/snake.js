@@ -415,7 +415,7 @@ function draw() {
 	ctx.fillText(temp, 10, canvas.height - 10);
 	ctx.fillText(player1 + " score: " + score, 10, canvas.height - 10);
 	ctx.fillText(player2 + " score: " + score2, 180, canvas.height - 10);
-	ctx.fillText(" Network Latency: " + network_latency, 300, canvas.height - 10);
+	ctx.fillText(" Network Latency: " + network_latency + "ms", 300, canvas.height - 10);
 
 }
 
