@@ -3,6 +3,7 @@
 //Jonathan Saavedra
 #include <stdlib.h>
 #include <iostream>
+#include <chrono>
 #include <string>
 #include <sstream>
 #include <time.h>
@@ -21,10 +22,15 @@ bool player2nameset;
 bool p1ready;
 bool p2ready;
 
+time_t seconds;
+unsigned long long received;
+unsigned long long sent;
+
 typedef pair<int, int> location;
 
 vector<location> player1_locs;
 vector<location> player2_locs;
+vector<unsigned long long> times;
 
 const int COLS = 26;
 const int ROWS = 26;
@@ -86,6 +92,8 @@ location setFood(vector<location> a, vector<location> b) {
 
 /* called when a client sends a message to the server */
 void messageHandler(int clientID, string message) {
+	received = std::chrono::duration_cast<std::chrono::milliseconds>
+		(std::chrono::system_clock::now().time_since_epoch()).count();
 
 	if (clientID == 0 && player1nameset == false) {
 		player1_name = message;
@@ -120,6 +128,34 @@ void messageHandler(int clientID, string message) {
 			server.wsSend(0, "READY");
 			server.wsSend(1, "READY");
 		}
+		return;
+	}
+
+	if (message == "time") {
+		ostringstream os;
+		time(&seconds);
+		times.push_back(received);
+		times.push_back(std::chrono::duration_cast<std::chrono::milliseconds>
+			(std::chrono::system_clock::now().time_since_epoch()).count());
+		
+		os << "TIME: [";
+
+		for (int i = 0; i < times.size(); i++) {
+			os << times[i];
+			if (i != times.size() - 1)
+				os << ",";
+		}
+		os << "]";
+		times.clear();
+		server.wsSend(clientID, os.str());
+		return;
+	}
+
+	if (message == "end") {
+		if (clientID == 0)
+			server.wsSend(1, "END");
+		if (clientID == 1)
+			server.wsSend(0, "END");
 		return;
 	}
 
@@ -199,6 +235,7 @@ void messageHandler(int clientID, string message) {
 
 /* called once per select() loop */
 void periodicHandler(){
+	/*
     static time_t next = time(NULL) + 10;
     time_t current = time(NULL);
     if (current >= next){
@@ -212,7 +249,7 @@ void periodicHandler(){
             server.wsSend(clientIDs[i], os.str());
 
         next = time(NULL) + 10;
-    }
+    }*/
 }
 
 int main(int argc, char *argv[]){
