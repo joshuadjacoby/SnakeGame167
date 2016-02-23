@@ -3,6 +3,7 @@
 //Jonathan Saavedra
 #include <stdlib.h>
 #include <iostream>
+#include <chrono>
 #include <string>
 #include <sstream>
 #include <time.h>
@@ -91,8 +92,8 @@ location setFood(vector<location> a, vector<location> b) {
 
 /* called when a client sends a message to the server */
 void messageHandler(int clientID, string message) {
-	time(&seconds);
-	received = (unsigned long long)seconds * 1000;
+	received = std::chrono::duration_cast<std::chrono::milliseconds>
+		(std::chrono::system_clock::now().time_since_epoch()).count();
 
 	if (clientID == 0 && player1nameset == false) {
 		player1_name = message;
@@ -133,9 +134,9 @@ void messageHandler(int clientID, string message) {
 	if (message == "time") {
 		ostringstream os;
 		time(&seconds);
-		sent = (unsigned long long)seconds * 1000;
 		times.push_back(received);
-		times.push_back(sent);
+		times.push_back(std::chrono::duration_cast<std::chrono::milliseconds>
+			(std::chrono::system_clock::now().time_since_epoch()).count());
 		
 		os << "TIME: [";
 
