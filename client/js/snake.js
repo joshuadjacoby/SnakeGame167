@@ -41,6 +41,11 @@ name_request = false,
 get_direction = false,
 snake2_scored = false,
 fruit_location = false,
+check_time = true,
+
+time_sent,
+time_received,
+network_latency,
 
 
 serverIP, /* number */
@@ -227,6 +232,12 @@ function setFood() {
 	//grid.set(FRUIT, randpos.x, randpos.y);
     
 }
+
+function calc_NTP(time_array) {
+    network_latency = (time_received - time_sent);
+    network_latency = (network_latency - (time_array[1] - time_array[0]));
+    network_latency = (network_latency / 2);
+}
 /**
  * Starts the game
  */
@@ -257,6 +268,7 @@ function main() {
  */
 function init() {
     name_request = true;
+    network_latency = 0;
     score = 0;
     score2 = 0;
     temp = ' ';
@@ -309,7 +321,15 @@ function update() {
 
 	
 	server.send('message', JSON.stringify(snake._queue));
-	if (frames%20 === 0) {
+
+	
+
+	if (frames % 20 === 0) {
+	    time_sent = new Date().getTime();
+	    if (check_time == true) {
+	        server.send('message', "time");
+	        check_time = false;
+	    }
 		// pop the last element from the snake queue i.e. the
 		// head
 		var nx = snake.last.x;
@@ -395,6 +415,7 @@ function draw() {
 	ctx.fillText(temp, 10, canvas.height - 10);
 	ctx.fillText(player1 + " score: " + score, 10, canvas.height - 10);
 	ctx.fillText(player2 + " score: " + score2, 180, canvas.height - 10);
+	ctx.fillText(" Network Latency: " + network_latency, 300, canvas.height - 10);
 
 }
 
@@ -439,6 +460,12 @@ function connectServer() {
 	        player2 = payload;
 	        name_request = false;
 	        server.send('message', 'client');
+        }
+        else if (payload.substring(0, 6) == "TIME: ") {
+            time_received = new Date().getTime();
+            times_array = JSON.parse(payload.substring(6));
+            calc_NTP(times_array);
+            check_time = true;
         }
         else if (payload == "END") {
             endGame();

@@ -21,10 +21,15 @@ bool player2nameset;
 bool p1ready;
 bool p2ready;
 
+time_t seconds;
+unsigned long long received;
+unsigned long long sent;
+
 typedef pair<int, int> location;
 
 vector<location> player1_locs;
 vector<location> player2_locs;
+vector<unsigned long long> times;
 
 const int COLS = 26;
 const int ROWS = 26;
@@ -86,6 +91,8 @@ location setFood(vector<location> a, vector<location> b) {
 
 /* called when a client sends a message to the server */
 void messageHandler(int clientID, string message) {
+	time(&seconds);
+	received = (unsigned long long)seconds * 1000;
 
 	if (clientID == 0 && player1nameset == false) {
 		player1_name = message;
@@ -120,6 +127,26 @@ void messageHandler(int clientID, string message) {
 			server.wsSend(0, "READY");
 			server.wsSend(1, "READY");
 		}
+		return;
+	}
+
+	if (message == "time") {
+		ostringstream os;
+		time(&seconds);
+		sent = (unsigned long long)seconds * 1000;
+		times.push_back(received);
+		times.push_back(sent);
+		
+		os << "TIME: [";
+
+		for (int i = 0; i < times.size(); i++) {
+			os << times[i];
+			if (i != times.size() - 1)
+				os << ",";
+		}
+		os << "]";
+		times.clear();
+		server.wsSend(clientID, os.str());
 		return;
 	}
 
@@ -207,6 +234,7 @@ void messageHandler(int clientID, string message) {
 
 /* called once per select() loop */
 void periodicHandler(){
+	/*
     static time_t next = time(NULL) + 10;
     time_t current = time(NULL);
     if (current >= next){
@@ -220,7 +248,7 @@ void periodicHandler(){
             server.wsSend(clientIDs[i], os.str());
 
         next = time(NULL) + 10;
-    }
+    }*/
 }
 
 int main(int argc, char *argv[]){
