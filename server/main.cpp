@@ -123,6 +123,14 @@ void messageHandler(int clientID, string message) {
 		return;
 	}
 
+	if (message == "end") {
+		if (clientID == 0)
+			server.wsSend(1, "END");
+		if (clientID == 1)
+			server.wsSend(0, "END");
+		return;
+	}
+
 
 
 	if (message == "p1score") {

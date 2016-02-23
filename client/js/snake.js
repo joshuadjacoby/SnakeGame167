@@ -336,10 +336,9 @@ function update() {
 		// checks all gameover conditions
 		if (0 > nx || nx > grid.width-1  ||
 			0 > ny || ny > grid.height-1 ||
-			grid.get(nx, ny) === SNAKE || 0 > nx2 || nx2 > grid.width - 1 ||
-			0 > ny2 || ny2 > grid.height - 1 || grid.get(nx, ny) === SNAKE2 ||
-			grid.get(nx2, ny2) === SNAKE
+			grid.get(nx, ny) === SNAKE || grid.get(nx, ny) === SNAKE2 
 		) {
+		    server.send('message', "end");
 			endGame();
 		}
 		// check wheter the new position are on the fruit item
@@ -441,7 +440,10 @@ function connectServer() {
 	        name_request = false;
 	        server.send('message', 'client');
         }
-        else if (message == "READY") {
+        else if (payload == "END") {
+            endGame();
+        }
+        else if (payload == "READY") {
             setFood();
             loop();
         }
