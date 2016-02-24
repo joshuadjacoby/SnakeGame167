@@ -236,7 +236,6 @@ function setFood() {
 function calc_NTP(time_array) {
     network_latency = (time_received - time_sent);
     network_latency = (network_latency - (time_array[1] - time_array[0]));
-    network_latency = (network_latency / 2);
 }
 /**
  * Starts the game
@@ -358,8 +357,8 @@ function update() {
 			0 > ny || ny > grid.height-1 ||
 			grid.get(nx, ny) === SNAKE || grid.get(nx, ny) === SNAKE2 
 		) {
-		    server.send('message', "end");
-			endGame();
+		    //server.send('message', "end");
+			//endGame();
 		}
 		// check wheter the new position are on the fruit item
 		if (grid.get(nx, ny) === FRUIT) {

@@ -33,8 +33,8 @@ vector<location> player1_locs;
 vector<location> player2_locs;
 vector<unsigned long long> times;
 
-MessageDelayer receive_buffer(800);
-MessageDelayer send_buffer(800);
+MessageDelayer receive_buffer(1);
+MessageDelayer send_buffer(1);
 
 const int COLS = 26;
 const int ROWS = 26;
@@ -95,15 +95,14 @@ location setFood(vector<location> a, vector<location> b) {
 }
 
 void Read_Message(int clientID, string message) {
-	received = std::chrono::duration_cast<std::chrono::milliseconds>
-		(std::chrono::system_clock::now().time_since_epoch()).count();
+	
 
 	if (clientID == 0 && player1nameset == false) {
 		player1_name = message;
 		player1nameset = true;
 		if (player1nameset == true && player2nameset == true) {
-			server.wsSend(0, player2_name);
-			server.wsSend(1, player1_name);
+			send_buffer.putMessage(0, player2_name);
+			send_buffer.putMessage(1, player1_name);
 		}
 		return;
 	}
@@ -111,8 +110,8 @@ void Read_Message(int clientID, string message) {
 		player2_name = message;
 		player2nameset = true;
 		if (player1nameset == true && player2nameset == true) {
-			server.wsSend(0, player2_name);
-			server.wsSend(1, player1_name);
+			send_buffer.putMessage(0, player2_name);
+			send_buffer.putMessage(1, player1_name);
 		}
 		return;
 	}
@@ -128,37 +127,24 @@ void Read_Message(int clientID, string message) {
 			p2ready = true;
 		}
 		if (p1ready == true && p2ready == true) {
-			server.wsSend(0, "READY");
-			server.wsSend(1, "READY");
+			send_buffer.putMessage(0, "READY");
+			send_buffer.putMessage(1, "READY");
 		}
 		return;
 	}
 
 	if (message == "time") {
-		ostringstream os;
-		time(&seconds);
-		times.push_back(received);
-		times.push_back(std::chrono::duration_cast<std::chrono::milliseconds>
-			(std::chrono::system_clock::now().time_since_epoch()).count());
-
-		os << "TIME: [";
-
-		for (int i = 0; i < times.size(); i++) {
-			os << times[i];
-			if (i != times.size() - 1)
-				os << ",";
-		}
-		os << "]";
-		times.clear();
-		server.wsSend(clientID, os.str());
+		received = std::chrono::duration_cast<std::chrono::milliseconds>
+			(std::chrono::system_clock::now().time_since_epoch()).count();
+		send_buffer.putMessage(clientID, "TIME");
 		return;
 	}
 
 	if (message == "end") {
 		if (clientID == 0)
-			server.wsSend(1, "END");
+			send_buffer.putMessage(1, "END");
 		if (clientID == 1)
-			server.wsSend(0, "END");
+			send_buffer.putMessage(0, "END");
 		return;
 	}
 
@@ -167,25 +153,25 @@ void Read_Message(int clientID, string message) {
 	if (message == "p1score") {
 		if (clientID == 0) {
 			player_scores[0]++;
-			server.wsSend(0, "p1scored");
-			server.wsSend(1, "p2scored");
+			send_buffer.putMessage(0, "p1scored");
+			send_buffer.putMessage(1, "p2scored");
 		}
 		else {
 			player_scores[1]++;
-			server.wsSend(1, "p1scored");
-			server.wsSend(0, "p2scored");
+			send_buffer.putMessage(1, "p1scored");
+			send_buffer.putMessage(0, "p2scored");
 		}
 
 		return;
 	}
 
 	if (message == "client" && clientID == 0) {
-		server.wsSend(0, "0");
+		send_buffer.putMessage(0, "0");
 		return;
 	}
 
 	if (message == "client" && clientID == 1) {
-		server.wsSend(1, "1");
+		send_buffer.putMessage(1, "1");
 		return;
 	}
 
@@ -217,19 +203,19 @@ void Read_Message(int clientID, string message) {
 		if (!player1_locs.empty() && !player2_locs.empty()) {
 			location fruit = setFood(player1_locs, player2_locs);
 			string fruitString = to_string(fruit.first) + "/" + to_string(fruit.second);
-			server.wsSend(0, fruitString);
-			server.wsSend(1, fruitString);
+			send_buffer.putMessage(0, fruitString);
+			send_buffer.putMessage(1, fruitString);
 		}
 	}
 
 	else {
 		if (clientID == 0) {
 			player1queue = message;
-			server.wsSend(0, player2queue);
+			send_buffer.putMessage(0, player2queue);
 		}
 		if (clientID == 1) {
 			player2queue = message;
-			server.wsSend(1, player1queue);
+			send_buffer.putMessage(1, player1queue);
 		}
 	}
 
@@ -237,10 +223,34 @@ void Read_Message(int clientID, string message) {
 
 }
 
+void Send_Message(int clientID, string message) {
+	if (message != "TIME")
+		server.wsSend(clientID, message);
+	else {
+		ostringstream os;
+		time(&seconds);
+		times.push_back(received);
+		times.push_back(std::chrono::duration_cast<std::chrono::milliseconds>
+			(std::chrono::system_clock::now().time_since_epoch()).count());
+
+		os << "TIME: [";
+
+		for (int i = 0; i < times.size(); i++) {
+			os << times[i];
+			if (i != times.size() - 1)
+				os << ",";
+		}
+		os << "]";
+		times.clear();
+		server.wsSend(clientID, os.str());
+	}
+}
+
 /* called when a client sends a message to the server */
 void messageHandler(int clientID, string message) {
 	receive_buffer.putMessage(clientID, message);
 	return;
+	/*
 	received = std::chrono::duration_cast<std::chrono::milliseconds>
 		(std::chrono::system_clock::now().time_since_epoch()).count();
 
@@ -378,7 +388,7 @@ void messageHandler(int clientID, string message) {
 			server.wsSend(1, player1queue);
 		}
 	}
-
+	*/
 
 }
 
@@ -388,9 +398,15 @@ void periodicHandler(){
 	message_pair = receive_buffer.getMessage();
 	
 	if (message_pair.first != -1 && message_pair.second != "") {
-		cout << message_pair.second << endl;
 		Read_Message(message_pair.first, message_pair.second);
 	}
+
+	message_pair = send_buffer.getMessage();
+
+	if (message_pair.first != -1 && message_pair.second != "") {
+		Send_Message(message_pair.first, message_pair.second);
+	}
+
 
 	/*
     static time_t next = time(NULL) + 10;
