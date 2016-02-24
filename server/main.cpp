@@ -8,6 +8,7 @@
 #include <sstream>
 #include <time.h>
 #include "websocket.h"
+#include "MessageDelayer.h"
 
 using namespace std;
 
@@ -31,6 +32,9 @@ typedef pair<int, int> location;
 vector<location> player1_locs;
 vector<location> player2_locs;
 vector<unsigned long long> times;
+
+MessageDelayer receive_buffer(800);
+MessageDelayer send_buffer(800);
 
 const int COLS = 26;
 const int ROWS = 26;
@@ -90,8 +94,153 @@ location setFood(vector<location> a, vector<location> b) {
 
 }
 
+void Read_Message(int clientID, string message) {
+	received = std::chrono::duration_cast<std::chrono::milliseconds>
+		(std::chrono::system_clock::now().time_since_epoch()).count();
+
+	if (clientID == 0 && player1nameset == false) {
+		player1_name = message;
+		player1nameset = true;
+		if (player1nameset == true && player2nameset == true) {
+			server.wsSend(0, player2_name);
+			server.wsSend(1, player1_name);
+		}
+		return;
+	}
+	if (clientID == 1 && player2nameset == false) {
+		player2_name = message;
+		player2nameset = true;
+		if (player1nameset == true && player2nameset == true) {
+			server.wsSend(0, player2_name);
+			server.wsSend(1, player1_name);
+		}
+		return;
+	}
+
+	ostringstream os;
+	vector<int> clientIDs = server.getClientIDs();
+
+	if (message == "ready") {
+		if (clientID == 0) {
+			p1ready = true;
+		}
+		if (clientID == 1) {
+			p2ready = true;
+		}
+		if (p1ready == true && p2ready == true) {
+			server.wsSend(0, "READY");
+			server.wsSend(1, "READY");
+		}
+		return;
+	}
+
+	if (message == "time") {
+		ostringstream os;
+		time(&seconds);
+		times.push_back(received);
+		times.push_back(std::chrono::duration_cast<std::chrono::milliseconds>
+			(std::chrono::system_clock::now().time_since_epoch()).count());
+
+		os << "TIME: [";
+
+		for (int i = 0; i < times.size(); i++) {
+			os << times[i];
+			if (i != times.size() - 1)
+				os << ",";
+		}
+		os << "]";
+		times.clear();
+		server.wsSend(clientID, os.str());
+		return;
+	}
+
+	if (message == "end") {
+		if (clientID == 0)
+			server.wsSend(1, "END");
+		if (clientID == 1)
+			server.wsSend(0, "END");
+		return;
+	}
+
+
+
+	if (message == "p1score") {
+		if (clientID == 0) {
+			player_scores[0]++;
+			server.wsSend(0, "p1scored");
+			server.wsSend(1, "p2scored");
+		}
+		else {
+			player_scores[1]++;
+			server.wsSend(1, "p1scored");
+			server.wsSend(0, "p2scored");
+		}
+
+		return;
+	}
+
+	if (message == "client" && clientID == 0) {
+		server.wsSend(0, "0");
+		return;
+	}
+
+	if (message == "client" && clientID == 1) {
+		server.wsSend(1, "1");
+		return;
+	}
+
+	if (message == "fruit") {
+		string s;
+		if (clientID == 0)
+			s = player1queue;
+		else
+			s = player2queue;
+		string delimiter = ":";
+
+		size_t startPos = 0;
+		size_t endPos = 0;
+		string x;
+		string y;
+		while ((startPos = s.find(delimiter)) != string::npos) {
+			endPos = s.find(",");
+			x = s.substr(startPos + delimiter.length(), endPos);
+			s.erase(0, endPos);
+			startPos = s.find(delimiter);
+			endPos = s.find("}");
+			y = s.substr(startPos + delimiter.length(), endPos);
+			s.erase(0, endPos);
+			if (clientID == 0)
+				player1_locs.push_back(make_pair(stoi(x), stoi(y)));
+			else
+				player2_locs.push_back(make_pair(stoi(x), stoi(y)));
+		}
+		if (!player1_locs.empty() && !player2_locs.empty()) {
+			location fruit = setFood(player1_locs, player2_locs);
+			string fruitString = to_string(fruit.first) + "/" + to_string(fruit.second);
+			server.wsSend(0, fruitString);
+			server.wsSend(1, fruitString);
+		}
+	}
+
+	else {
+		if (clientID == 0) {
+			player1queue = message;
+			server.wsSend(0, player2queue);
+		}
+		if (clientID == 1) {
+			player2queue = message;
+			server.wsSend(1, player1queue);
+		}
+	}
+
+
+
+}
+
 /* called when a client sends a message to the server */
 void messageHandler(int clientID, string message) {
+	receive_buffer.putMessage(clientID, message);
+	return;
 	received = std::chrono::duration_cast<std::chrono::milliseconds>
 		(std::chrono::system_clock::now().time_since_epoch()).count();
 
@@ -235,6 +384,14 @@ void messageHandler(int clientID, string message) {
 
 /* called once per select() loop */
 void periodicHandler(){
+	std::pair <int, std::string> message_pair;
+	message_pair = receive_buffer.getMessage();
+	
+	if (message_pair.first != -1 && message_pair.second != "") {
+		cout << message_pair.second << endl;
+		Read_Message(message_pair.first, message_pair.second);
+	}
+
 	/*
     static time_t next = time(NULL) + 10;
     time_t current = time(NULL);
@@ -258,11 +415,12 @@ int main(int argc, char *argv[]){
     cout << "Please set server port: ";
     cin >> port;
 
+
     /* set event handler */
     server.setOpenHandler(openHandler);
     server.setCloseHandler(closeHandler);
     server.setMessageHandler(messageHandler);
-    //server.setPeriodicHandler(periodicHandler);
+    server.setPeriodicHandler(periodicHandler);
 
     /* start the chatroom server, listen to ip '127.0.0.1' and port '8000' */
     server.startServer(port);

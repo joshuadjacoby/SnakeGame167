@@ -1,37 +1,46 @@
-#include MessageDelayer.h
+#include "MessageDelayer.h"
 
-MessageDelayer::MessageDelayer(int maxDelay) {
-    this.maxDelay = maxDelay
-    nextReleaseTime = 0   // So that we can identify a brand-new MessageDelayer
+MessageDelayer::MessageDelayer(int Delay) {
+		maxDelay = Delay;
+		nextReleaseTime = 0;   // So that we can identify a brand-new MessageDelayer
 }
 
 // Inserts a message into the MessageDelayer
-void MesageDelayer::putMessage(int clientID, string message) {
-    messageQueue.push(pair<int, string.(clientID, message));
+void MessageDelayer::putMessage(int clientID, std::string message) {
+	std::pair <int, std::string>  message_pair = std::make_pair(clientID, message);
+    messageQueue.push(message_pair);
     if (nextReleaseTime == 0)
         updateReleaseTime();
 }
 
 // Fetches the next message from the MessageDelayer, if one is ready
 // (If not, a special error value is sent. )
-pair<int, string> MessageDelayer::getMessage() {
-    if (isMessageReady) {
+std::pair <int, std::string> MessageDelayer::getMessage() {
+    if (isMessageReady() == true && !messageQueue.empty() ) {
         updateReleaseTime();
-        return message;
+		std::pair <int, std::string> message = messageQueue.front();
+        messageQueue.pop();
+		return message;
     } else
-        return pair<int, string>(-1, "");
+        return std::pair <int, std::string>(-1, "");
 }
 
 bool MessageDelayer::isMessageReady() {
-    return (!messageQueue().empty() && (std::chrono::system_clock::now().time_since_epoch()).count() >= nextReleaseTime)
+	return (!messageQueue.empty() && (std::chrono::duration_cast<std::chrono::milliseconds>
+		(std::chrono::system_clock::now().time_since_epoch()).count() >= nextReleaseTime));
 }
 
 // Discard all messages in the buffer
 void MessageDelayer::clear() {
-    messageQueue.clear();
+    messageQueue.empty();
 }
 
 // Calculate and set the next time a message will be ready to be released
 void MessageDelayer::updateReleaseTime(){
-    nextReleaseTime = std::chrono::system_clock::now().time_since_epoch()).count() + (rand() % maxDelay);
-}
+	
+    nextReleaseTime = std::chrono::duration_cast<std::chrono::milliseconds>
+		(std::chrono::system_clock::now().time_since_epoch()).count() +(rand() % maxDelay);
+	std::cout << "time now: " << std::chrono::duration_cast<std::chrono::milliseconds>
+		(std::chrono::system_clock::now().time_since_epoch()).count() << std::endl;
+	std::cout << "time release: " << nextReleaseTime << std::endl;
+} 
