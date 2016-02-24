@@ -49,10 +49,11 @@ public:
     Position head() const;
     
     /** Advances the player's snake 1 unit based on current direction,
-     *  and grows the snake if it eats food.
+     *  grows the snake if it eats food, increments the score, and reports the event
      *  @param const Position& - the current food Position
+     *  @return bool - whether the snake scored food
      */
-    void advance(const Position&);
+    bool advance(const Position&);
     
     /** Returns the player's queue as a JSON object. */
     json getQueueJSON() const;
@@ -90,7 +91,7 @@ Position Player::head() const {
 }
 
 
-void Player::advance(const Position& food) {
+bool Player::advance(const Position& food) {
     Position newHead;
     newHead = queue.back();
     switch(direction) {
@@ -110,6 +111,11 @@ void Player::advance(const Position& food) {
     queue.push_back(newHead); // Add the new head
     if (food != head()) {
         queue.pop_front(); // Delete the old tail if we didn't get food
+        return false;
+    }
+    else {
+        score++;
+        return true;
     }
 }
 
