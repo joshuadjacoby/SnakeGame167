@@ -58,31 +58,33 @@ json Player::getQueueJSON() const {
     return output;
 }
 
-bool Player::collisionCheck(const Player &otherPlayer) const {
-    // Check our head against the other snake's queue
-    for (auto iter = otherPlayer.queue.begin(); iter != otherPlayer.queue.end(); iter++) {
-        if (head() == *iter)
-            return true;
-    
-    // Check the other snake's head against our queue
-    for (auto iter = queue.begin(); iter != queue.end(); iter++) {
-        if (otherPlayer.head() == *iter)
-            return true;
-    }
-    
-    // Also check if our head collides with a wall
-        if (head().x <= 0 || head().x >= COLS || head().y <= 0 || head().y >= ROWS)
-            return true;
-    }
-
-    // Otherwise, return false
-    return false;
-}
-
 bool Player::occupies(const Position& pos) const {
     for (auto iter = queue.begin(); iter != queue.end(); iter++) {
         if (pos == *iter)
             return true;
     }
+    return false;
+}
+
+bool Player::boundaryCheck() const {
+    // Check if snake's head touches the perimeter
+    if (head().x <= 0 || head().x >= COLS || head().y <= 0 || head().y >= ROWS)
+        return true;
+}
+
+
+bool Player::collisionCheck(const Player &p1, const Player &p2) {
+    // Check p1's head against p2's whole queue
+    for (auto iter = p2.queue.begin(); iter != p2.queue.end(); iter++) {
+        if (p1.head() == *iter)
+            return true;
+        
+        // Check the other snake's head against our queue
+        for (auto iter = p1.queue.begin(); iter != p1.queue.end(); iter++) {
+            if (p2.head() == *iter)
+                return true;
+        }
+    }
+    // Otherwise, return false
     return false;
 }

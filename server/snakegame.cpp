@@ -70,23 +70,26 @@ json SnakeGame::update() {
      * advance first, then a collision check must occur, and then
      * the other player may go. If both players advanced simultaneously,
      * before the collision check, they could effectively pass through
-     * each other without triggering a collision.
+     * each other without triggering a collision. Finally, at the end,
+     * both players must be checked for a collision with the outer boundary.
      */
     
-    // Advance the first player, and check if apple was eaten.
+    // 1. Advance the first player, and check if apple was eaten.
     if (player1->advance(applePosition)) {
         setApple();
     }
     
-    // Check if collision happened
-    if (player1->collisionCheck(*player2)) {
-        gameActive = false;
-    }
+    // 2. Check if collision happened, but not in the first frame
+    // (where at least one player will still be touching a wall)
+    gameActive = !(Player::collisionCheck(*player1, *player2) && currentFrame > 1);
     
-    // Advance the second player, and check if apple was eaten.
+    // 3. Advance the second player, and check if apple was eaten.
     if (player2->advance(applePosition)) {
         setApple();
     }
+    
+    // 4. Check if a collision occurred with the game boundary
+    gameActive = !(player1->boundaryCheck() || player2->boundaryCheck());
     
     // Construct and return JSON update bundle
     return statusObject();

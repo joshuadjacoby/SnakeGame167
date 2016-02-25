@@ -47,6 +47,7 @@ newServerUpdate, /* message object: a server game update ready to be processed *
 applePosition, /* (x, y) coordinate pair representing the apple location */
 
 running, /* boolean, flags if game is running or not */
+animationFrame, /* the current Window.animationframe (in case we need to kill it) */
 
 network; /* type: GameNetwork */
 
@@ -241,7 +242,7 @@ function loop() {
 	
 	// When ready to redraw the canvas call the loop function
 	// first. Runs about 60 frames a second
-	window.requestAnimationFrame(loop, canvas);
+	animationFrame = window.requestAnimationFrame(loop, canvas);
 }
 
 /**
@@ -322,7 +323,14 @@ function update() {
         snake1._queue = newServerUpdate["PLAYER_1_QUEUE"];
         snake2._queue = newServerUpdate["PLAYER_2_QUEUE"];
         applePosition = newServerUpdate["APPLE_POSITION"];
-        
+ 
+        // First, check if game is over
+        if (newServerUpdate["GAME_STATUS"] == false) {
+            ui.endGame(player1, player2, score1, score2);
+            newServerUpdate = null;
+            return;
+        }
+
         // Clear the grid
         	grid.init(EMPTY, COLS, ROWS);
         	
@@ -338,11 +346,6 @@ function update() {
                         
         // Write the apple onto the grid
         grid.set(FRUIT, applePosition["x"], applePosition["y"]);
-        
-        // Check if game is over
-        if (newServerUpdate["GAME_STATUS"] == false) {
-            ui.endGame(player1, player2, score1, score2);
-        }
         
         // Delete the server update; we don't need it anymore
         newServerUpdate = null;        

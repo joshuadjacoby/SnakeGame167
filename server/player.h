@@ -43,18 +43,21 @@ public:
     /** Returns the player's queue as a JSON object. */
     json getQueueJSON() const;
     
-    
-    /** Detects whether a collision is occurring with a wall or other player.
-     *  @param const Player& - the other player
-     */
-    bool collisionCheck(const Player&) const;
-    
     /** Checks if this player's body occupies Position (x,y)
      *  @param Position - the position to check
      *  @return bool
      */
     bool occupies(const Position&) const;
 
+    /** Checks if this player's head is touching a game boundary.
+     *  @return bool 
+     */
+    bool boundaryCheck() const;
+    
+    /** Detects whether a collision is occurring between two snakes.
+     *  @param const Player& - the other player
+     */
+    static bool collisionCheck(const Player&, const Player&);
     
 protected:
     
