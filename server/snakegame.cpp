@@ -66,17 +66,25 @@ json SnakeGame::update() {
     // Increment the frame counter
     currentFrame++;
     
-    // Advance the players and record whether apple
-    // was eaten.
-    bool appleEaten = player1->advance(applePosition) || player2->advance(applePosition);
+    /* Note: The sequence of steps is crucial here. One player must
+     * advance first, then a collision check must occur, and then
+     * the other player may go. If both players advanced simultaneously,
+     * before the collision check, they could effectively pass through
+     * each other without triggering a collision.
+     */
+    
+    // Advance the first player, and check if apple was eaten.
+    if (player1->advance(applePosition)) {
+        setApple();
+    }
     
     // Check if collision happened
-    if (player1->collidesWith(*player2)) {
+    if (player1->collisionCheck(*player2)) {
         gameActive = false;
     }
     
-    // Reset the apple, if necessary
-    if (appleEaten) {
+    // Advance the second player, and check if apple was eaten.
+    if (player2->advance(applePosition)) {
         setApple();
     }
     

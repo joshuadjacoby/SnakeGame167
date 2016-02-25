@@ -16,14 +16,8 @@ using namespace std;
 using json = nlohmann::json;
 
 webSocket server;
-
 SnakeGame *game_p = NULL; // A pointer to access the SnakeGame we'll eventually instantiate
-
-// This container holds player 1 and player 2's pre-game status updates, before the
-// game is instantiated. We use this container to hold the messages, and to
-// determine when both players are ready.
-vector<json> pregame_player_msgs(2);
-
+json pregame_player_msgs; // Holding place for messages recevied from clients before game starts
 unsigned long lastUpdateTime = 0; // Keep track of when we last advanced the game state
 
 
@@ -32,6 +26,7 @@ void resetGame() {
     delete game_p;
     game_p = NULL;
     pregame_player_msgs.clear();
+    lastUpdateTime = 0;
 }
 
 
@@ -94,56 +89,51 @@ void closeHandler(int clientID){
         errorMsg["MESSAGE_TYPE"] = "ERROR";
         errorMsg["ERROR_MSG"] = "Other player disconnected";
 
+        // Send the message to whomever is connected
         vector<int> clientIDs = server.getClientIDs();
         for (int i = 0; i < clientIDs.size(); i++) {
             send_json(clientIDs[i], errorMsg);
+        }
+
+        // Close all open connections (must be done separately)
+        clientIDs = server.getClientIDs();
+        for (int i = 0; i < clientIDs.size(); i++) {
+            server.wsClose(i);
         }
     }
 }
 
 /* called when a client sends a message to the server */
 void messageHandler(int clientID, string message){
-
-    // DEBUG
-    // DEBUG
-    // DEBUG
-    cout << "Message received from socket client ID " << clientID << " :" << message << endl;
-    // DEBUG
-    // DEBUG
-    // DEBUG
-    
     
     // Deserialize message from the string
     json msg = json::parse(message);
     
-    
-    // Step 1: Process the message
     if (msg["MESSAGE_TYPE"] == "CLIENT_UPDATE") {
+
+        // Scenario A: We don't have a game ready yet. This is a pre-game message.
+        if (game_p == NULL) {
         
-        // If the game object has already been instantiated,
-        // pass the message to the game
-        if (game_p != NULL) {
+            // Step 1: Put the message in the correct bin.
+            pregame_player_msgs[clientID] = msg;
+        
+            // Step 2: If both bins are filled (2 players ready),
+            // then start a new game.
+            if (pregame_player_msgs.size() == 2) {
+                game_p = new SnakeGame(pregame_player_msgs[0], pregame_player_msgs[1]);
+                pregame_player_msgs.clear();
+            }
+        }
+
+        // Scenario B: A game already exists. Just forward the message to it.
+        else {
             game_p->handleClientInput(msg);
         }
-        
-        // Otherwise, this is a pre-game message; hold it in the
-        // appropriate slot (index 0 or 1, depending on player 1 or player 2)
-        else {
-            pregame_player_msgs[clientID] = msg;
-        }
-    }
-    
-    // Step 2: Let's now check if both players have sent us a pre-game status
-    // update. If they have, we're ready to start the game!
-    if (pregame_player_msgs[0] != NULL && pregame_player_msgs[1] != NULL) {
-        
-        // Instantiate a new game using the pre-game client update messages
-        game_p = new SnakeGame(pregame_player_msgs[0], pregame_player_msgs[1]);
-        
-        // Flush the pre-game messages, since we don't need them any more
-        pregame_player_msgs.clear();
     }
 }
+
+
+    
 
 
 
@@ -193,9 +183,8 @@ void periodicHandler(){
             server.wsClose(clientIDs[i]);
         }
         
-        // Delete the game object from memory
-        delete game_p;
-        game_p = NULL;
+        // Reset everything; delete old game object; etc.
+        resetGame();
     }
 }
 
@@ -203,8 +192,6 @@ void periodicHandler(){
 
 
 int main(int argc, char *argv[]){
-    
-    game_p = NULL;
     
     int port;
 

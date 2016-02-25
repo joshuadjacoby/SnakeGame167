@@ -58,12 +58,11 @@ json Player::getQueueJSON() const {
     return output;
 }
 
-bool Player::collidesWith(const Player &otherPlayer) const {
+bool Player::collisionCheck(const Player &otherPlayer) const {
     // Check our head against the other snake's queue
     for (auto iter = otherPlayer.queue.begin(); iter != otherPlayer.queue.end(); iter++) {
         if (head() == *iter)
             return true;
-    }
     
     // Check the other snake's head against our queue
     for (auto iter = queue.begin(); iter != queue.end(); iter++) {
@@ -71,6 +70,11 @@ bool Player::collidesWith(const Player &otherPlayer) const {
             return true;
     }
     
+    // Also check if our head collides with a wall
+        if (head().x <= 0 || head().x >= COLS || head().y <= 0 || head().y >= ROWS)
+            return true;
+    }
+
     // Otherwise, return false
     return false;
 }

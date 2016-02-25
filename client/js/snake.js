@@ -339,8 +339,13 @@ function update() {
         // Write the apple onto the grid
         grid.set(FRUIT, applePosition["x"], applePosition["y"]);
         
+        // Check if game is over
+        if (newServerUpdate["GAME_STATUS"] == false) {
+            ui.endGame(player1, player2, score1, score2);
+        }
+        
         // Delete the server update; we don't need it anymore
-        newServerUpdate = null;
+        newServerUpdate = null;        
     }
 }
 

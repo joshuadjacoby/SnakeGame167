@@ -44,13 +44,10 @@ public:
     json getQueueJSON() const;
     
     
-    /** Detects whether a collision has just occurred in the current frame.
-     *  NOTE: This only detects a head-to-body or head-to-head collision. (T or L junction).
-     *  It will not detect a body-to-body overlap (X junction), which represents a
-     *  collision that occurred in a previous frame.
+    /** Detects whether a collision is occurring with a wall or other player.
      *  @param const Player& - the other player
      */
-    bool collidesWith(const Player&) const;
+    bool collisionCheck(const Player&) const;
     
     /** Checks if this player's body occupies Position (x,y)
      *  @param Position - the position to check
