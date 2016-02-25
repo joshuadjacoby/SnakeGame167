@@ -324,8 +324,9 @@ function update() {
 	
 
 	if (frames % 20 === 0) {
-	    time_sent = new Date().getTime();
+	    
 	    if (check_time == true) {
+	        time_sent = new Date().getTime();
 	        server.send('message', "time");
 	        check_time = false;
 	    }

@@ -33,8 +33,8 @@ vector<location> player1_locs;
 vector<location> player2_locs;
 vector<unsigned long long> times;
 
-MessageDelayer receive_buffer(1);
-MessageDelayer send_buffer(1);
+MessageDelayer receive_buffer(10);
+MessageDelayer send_buffer(10);
 
 const int COLS = 26;
 const int ROWS = 26;
@@ -395,15 +395,16 @@ void messageHandler(int clientID, string message) {
 /* called once per select() loop */
 void periodicHandler(){
 	std::pair <int, std::string> message_pair;
-	message_pair = receive_buffer.getMessage();
 	
-	if (message_pair.first != -1 && message_pair.second != "") {
+	if (receive_buffer.isMessageReady()) {
+		message_pair = receive_buffer.getMessage();
 		Read_Message(message_pair.first, message_pair.second);
 	}
 
-	message_pair = send_buffer.getMessage();
+	
 
-	if (message_pair.first != -1 && message_pair.second != "") {
+	if (send_buffer.isMessageReady()) {
+		message_pair = send_buffer.getMessage();
 		Send_Message(message_pair.first, message_pair.second);
 	}
 

@@ -40,7 +40,4 @@ void MessageDelayer::updateReleaseTime(){
 	
     nextReleaseTime = std::chrono::duration_cast<std::chrono::milliseconds>
 		(std::chrono::system_clock::now().time_since_epoch()).count() +(rand() % maxDelay);
-	std::cout << "time now: " << std::chrono::duration_cast<std::chrono::milliseconds>
-		(std::chrono::system_clock::now().time_since_epoch()).count() << std::endl;
-	std::cout << "time release: " << nextReleaseTime << std::endl;
 } 
