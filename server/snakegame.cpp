@@ -79,9 +79,11 @@ json SnakeGame::update() {
         setApple();
     }
     
-    // 2. Check if collision happened, but not in the first frame
-    // (where at least one player will still be touching a wall)
-    gameActive = !(Player::collisionCheck(*player1, *player2) && currentFrame > 1);
+    // 2. Check if collision happened
+    if (Player::collisionCheck(*player1, *player2)) {
+        gameActive = false;
+        return statusObject();
+    }
     
     // 3. Advance the second player, and check if apple was eaten.
     if (player2->advance(applePosition)) {
@@ -89,7 +91,9 @@ json SnakeGame::update() {
     }
     
     // 4. Check if a collision occurred with the game boundary
-    gameActive = !(player1->boundaryCheck() || player2->boundaryCheck());
+    if (player1->boundaryCheck() || player2->boundaryCheck()) {
+        gameActive = false;
+    }
     
     // Construct and return JSON update bundle
     return statusObject();

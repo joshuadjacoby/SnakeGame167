@@ -148,12 +148,12 @@ void periodicHandler(){
     }
     
     // If the game is active, update the game state.
-    // We want this to occur no sooner than 100 milliseconds (10 updates per second).
+    // We want this to occur no sooner than 200 milliseconds (5 updates per second).
     // WARNING: This sets the pace of the game, so any future client features that
     // perform movement prediction will have to use the same clock speed.
     if (game_p->isActive()) {
         unsigned long currentTime = chrono::system_clock::now().time_since_epoch() / chrono::milliseconds(1);
-        if (currentTime - lastUpdateTime >= 500) {
+        if (currentTime - lastUpdateTime >= 200) {
             // Update the game
             json msg = game_p->update();
             
