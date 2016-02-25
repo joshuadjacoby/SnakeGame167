@@ -9,8 +9,19 @@
 
 #include "json.hpp"
 
-using namespace std;
 using json = nlohmann::json;
+
+/* Declare constants: these must be identical on the client side.
+ * By convention, we will say that Player 1 always starts at the bottom facing up, and
+ * Player 2 starts at the top, facing down. (As it was originally implemented in the JS snake game.)
+ */
+const int COLS = 26;
+const int ROWS = 26;
+const int CENTER_COLUMN = 13;
+const int LEFT  = 0;
+const int UP    = 1;
+const int RIGHT = 2;
+const int DOWN  = 3;
 
 /* An (x, y) integer pair to represent game coordinates */
 class Position {
@@ -21,39 +32,26 @@ public:
     int y;
     
     // Constructors
+
+    /** Default constructor */
     Position();
+    
+    /** Constructor
+     *  @param int - x value
+     *  @param int - y value
+     */
     Position(int, int);
     
-    // Returns a json object in the form {"x" : value, "y" : value}
+    /** Returns a json object in the form {"x" : value, "y" : value}
+     *  @return json object
+     */
     json getJSON() const;
 };
 
-// Default constructor
-Position::Position() {
-    x = 0;
-    y = 0;
-}
+/** Overloaded == operator */
+bool operator== (const Position&, const Position&);
 
-// Constructor
-Position::Position(int a, int b) {
-    x = a;
-    y = b;
-}
-
-// Returns JSON object
-json Position::getJSON() const {
-    return json({ {"x", x}, {"y", y} });
-}
-
-// Overloaded == operator for Position class
-bool operator== (const Position& a, const Position& b) {
-    return (a.x == b.x && a.y == b.y);
-}
-
-// Overloaded != operator for Position class
-bool operator!= (const Position& a, const Position& b) {
-    return !(a == b);
-}
-
+/** Overloaded != operator */
+bool operator!= (const Position&, const Position&);
 
 #endif /* position_h */

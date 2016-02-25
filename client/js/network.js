@@ -46,7 +46,7 @@ var GameNetwork = function(serverIP, port) {
             // Player assignment: this lets us know our player number, so we
             // can initialize things on the client side
             if (msgObject["MESSAGE_TYPE"] == "PLAYER_ASSIGNMENT") {
-                initializePlayer(msgObject["ASSIGNMENT"]);
+                initializePlayer(msgObject["PLAYER_NUMBER"]);
                 console.log("Received player assignment as player " + playerNumber);
                 
                 // Send server the first status update

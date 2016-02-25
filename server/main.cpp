@@ -62,7 +62,7 @@ void openHandler(int clientID){
     if (server.getClientIDs().size() == 1) {
         // Send msg: you've been assigned player 1
         msg["MESSAGE_TYPE"] = "PLAYER_ASSIGNMENT";
-        msg["ASSIGNMENT"] = 1;
+        msg["PLAYER_NUMBER"] = 1;
         send_json(clientID, msg);
     }
     
@@ -70,7 +70,7 @@ void openHandler(int clientID){
     else if (server.getClientIDs().size() == 2) {
         // Send msg: you've been assigned player 2
         msg["MESSAGE_TYPE"] = "PLAYER_ASSIGNMENT";
-        msg["ASSIGNMENT"] = 2;
+        msg["PLAYER_NUMBER"] = 2;
         send_json(clientID, msg);
     }
     
@@ -163,7 +163,7 @@ void periodicHandler(){
     // perform movement prediction will have to use the same clock speed.
     if (game_p->isActive()) {
         unsigned long currentTime = chrono::system_clock::now().time_since_epoch() / chrono::milliseconds(1);
-        if (currentTime - lastUpdateTime >= 100) {
+        if (currentTime - lastUpdateTime >= 500) {
             // Update the game
             json msg = game_p->update();
             

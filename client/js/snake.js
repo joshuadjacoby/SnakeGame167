@@ -403,14 +403,14 @@ function initializePlayer(playerNum) {
 /** Returns an object containing a Client Update message bundle.
   * This has at least the following fields (more can be added later):
   * "MESSAGE_TYPE" = "CLIENT_UPDATE"
-  * "CLIENT_ID" = 1 or 2
+  * "PLAYER_NUMBER" = 1 or 2
   * "PLAYER_NAME" = (player name)
   * "CLIENT_DIRECTION" = int (direction)
 */
 function playerStatus() {
     var msg = {};
     msg["MESSAGE_TYPE"] = "CLIENT_UPDATE";
-    msg["CLIENT_ID"] = playerNumber;
+    msg["PLAYER_NUMBER"] = playerNumber;
     msg["PLAYER_NAME"] = myName;
 
     if (playerNumber == 1) {
