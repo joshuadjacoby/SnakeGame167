@@ -11,46 +11,86 @@
 #include "websocket.h"
 #include "snakegame.h"
 #include "json.hpp"
+#include "MessageDelayer.h"
 
 using namespace std;
 using json = nlohmann::json;
+
+const int UPDATE_CYCLE_LENGTH_MS = 200; // Game only updates once per cycle length
 
 webSocket server;
 SnakeGame *game_p = NULL; // A pointer to access the SnakeGame we'll eventually instantiate
 json pregame_player_msgs; // Holding place for messages recevied from clients before game starts
 unsigned long lastUpdateTime = 0; // Keep track of when we last advanced the game state
+MessageDelayer send_buffer(300); // Outgoing message delay buffer
+MessageDelayer receive_buffer(300); // Incoming message delay buffer
 
 
-/** Resets, deletes any pointers and resets to NULL */
-void resetGame() {
-    delete game_p;
-    game_p = NULL;
-    pregame_player_msgs.clear();
-    lastUpdateTime = 0;
-}
+/**** FORWARD FUNCTION DECLARATIONS ****/
 
+/* Event handler for new network connection open event. 
+ * @param int - client ID
+ */
+void openHandler(int);
 
-/** Send json object as string to specified client
+/** Event handler for incoming message from network.
+ *  @param int - client ID
+ *  @param string - message payload
+ */
+void messageHandler(int, string);
+
+/* Event handler for connection closed event.
+ * @param int - client ID
+ */
+void closeHandler(int);
+
+/* Callback function for main server loop. The underlying
+ * socket library will call this function regularly, perhaps
+ * hundreds of times per second. Any recurrent behavior that
+ * is desired must be invoked here.
+ */
+void periodicHandler();
+
+/** Resets, purges message buffers, deletes any pointers and resets to NULL */
+void resetGame();
+
+/** Sends json object as JSON string-formatted message to specified client
  *  @param int clientID
  *  @param json JSON object message
- *
- * FOR MILESTONE 3: this must be delayed by a random amount
  */
-void send_json(int clientID, json msg) {
-    
-    // Add time stamp:
-    // Example:
-    // msg["TIME_STAMP"] = timeInMs();
-    
-    // Send the message
-    server.wsSend(clientID, msg.dump(), false);
+void send_message(int, json);
 
+/** Decodes incoming message and takes required action.
+ *  @param int - client ID
+ *  @param string - the message payload
+ */
+void read_message(int, string);
+
+
+/**** FUNCTION DEFINITIONS ****/
+
+/** Main **/
+int main(int argc, char *argv[]){
+    
+    int port;
+    
+    cout << "Please set server port: ";
+    cin >> port;
+    
+    /* set event handler */
+    server.setOpenHandler(openHandler);
+    server.setCloseHandler(closeHandler);
+    server.setMessageHandler(messageHandler);
+    server.setPeriodicHandler(periodicHandler);
+    
+    /* start the snake server, listen to ip '127.0.0.1' and port '8000' */
+    server.startServer(port);
+    
+    return 1;
 }
 
-
-/* called when a client connects */
 void openHandler(int clientID){
-
+    
     json msg; // Our first message to the client
     
     // If Player 1 just connected...
@@ -58,7 +98,7 @@ void openHandler(int clientID){
         // Send msg: you've been assigned player 1
         msg["MESSAGE_TYPE"] = "PLAYER_ASSIGNMENT";
         msg["PLAYER_NUMBER"] = 1;
-        send_json(clientID, msg);
+        send_message(clientID, msg);
     }
     
     // If Player 2 just connected...
@@ -66,101 +106,76 @@ void openHandler(int clientID){
         // Send msg: you've been assigned player 2
         msg["MESSAGE_TYPE"] = "PLAYER_ASSIGNMENT";
         msg["PLAYER_NUMBER"] = 2;
-        send_json(clientID, msg);
+        send_message(clientID, msg);
     }
     
     // Or if there are too many connections, reject it:
     else {
         msg["MESSAGE_TYPE"] = "CONNECTION_REJECTED";
-        send_json(clientID, msg);
+        send_message(clientID, msg);
         server.wsClose(clientID);
     }
 }
 
+void messageHandler(int clientID, string message) {
+    receive_buffer.putMessage(clientID, message);
+}
 
-/* called when a client disconnects */
 void closeHandler(int clientID){
-
+    
     // If game is ongoing, kill it and send out
     // an error to whomever is still connected:
     if (game_p != NULL && game_p->isActive()) {
-        resetGame();
         json errorMsg;
         errorMsg["MESSAGE_TYPE"] = "ERROR";
         errorMsg["ERROR_MSG"] = "Other player disconnected";
-
+        
         // Send the message to whomever is connected
         vector<int> clientIDs = server.getClientIDs();
         for (int i = 0; i < clientIDs.size(); i++) {
-            send_json(clientIDs[i], errorMsg);
+            server.wsSend(clientIDs[i], errorMsg.dump()); // Don't buffer
         }
-
+        
         // Close all open connections (must be done separately)
         clientIDs = server.getClientIDs();
         for (int i = 0; i < clientIDs.size(); i++) {
             server.wsClose(i);
         }
+        resetGame();
     }
 }
 
-/* called when a client sends a message to the server */
-void messageHandler(int clientID, string message){
-    
-    // Deserialize message from the string
-    json msg = json::parse(message);
-    
-    if (msg["MESSAGE_TYPE"] == "CLIENT_UPDATE") {
-
-        // Scenario A: We don't have a game ready yet. This is a pre-game message.
-        if (game_p == NULL) {
-        
-            // Step 1: Put the message in the correct bin.
-            pregame_player_msgs[clientID] = msg;
-        
-            // Step 2: If both bins are filled (2 players ready),
-            // then start a new game.
-            if (pregame_player_msgs.size() == 2) {
-                game_p = new SnakeGame(pregame_player_msgs[0], pregame_player_msgs[1]);
-                pregame_player_msgs.clear();
-            }
-        }
-
-        // Scenario B: A game already exists. Just forward the message to it.
-        else {
-            game_p->handleClientInput(msg);
-        }
-    }
-}
-
-
-    
-
-
-
-/* Once the server is started, this function is called repeatedly throughout 
- * the server's life-cycle. We'll use it to run the game loop (when there is
- * a game pending. */
 void periodicHandler(){
-
-    // If there's no game object, do nothing.
-    if (game_p == NULL) {
-        return;
+    
+    // Poll the incoming & outgoing message buffers.
+    std::pair <int, std::string> message_pair;
+    if (send_buffer.isMessageReady()) {
+        message_pair = send_buffer.getMessage();
+        if (message_pair.first != -1) {
+            server.wsSend(message_pair.first, message_pair.second);
+        }
+    }
+    if (receive_buffer.isMessageReady()) {
+        message_pair = receive_buffer.getMessage();
+        if (message_pair.first != -1) {
+            read_message(message_pair.first, message_pair.second);
+        }
     }
     
     // If the game is active, update the game state.
-    // We want this to occur no sooner than 200 milliseconds (5 updates per second).
-    // WARNING: This sets the pace of the game, so any future client features that
-    // perform movement prediction will have to use the same clock speed.
-    if (game_p->isActive()) {
+    // We want this to occur no sooner than UPDATE_CYCLE_LENGTH_MS.
+    // WARNING: This sets the pace of the game, so Milestone 4 client features that
+    // perform movement prediction MUST use the same clock speed.
+    if (game_p != NULL && game_p->isActive()) {
         unsigned long currentTime = chrono::system_clock::now().time_since_epoch() / chrono::milliseconds(1);
-        if (currentTime - lastUpdateTime >= 200) {
+        if (currentTime - lastUpdateTime >= UPDATE_CYCLE_LENGTH_MS) {
             // Update the game
             json msg = game_p->update();
             
             // Broadcast the update to all clients
             vector<int> clientIDs = server.getClientIDs();
             for (int i = 0; i < clientIDs.size(); i++) {
-                send_json(clientIDs[i], msg);
+                send_message(clientIDs[i], msg);
             }
             
             // Update the clock
@@ -170,42 +185,68 @@ void periodicHandler(){
     
     // If there is a game object but the status is INACTIVE,
     // update the clients and then DESTROY the game object.
-    if (!game_p->isActive()) {
-        // Get the final status message
+    if (game_p != NULL && !game_p->isActive()) {
+
         json msg = game_p->update();
+        resetGame();
         
         // Broadcast the final update to all clients
         // and then disconnect clients
         cout << "GAME OVER BROADCASTING FINAL UPDATE" << endl;
         vector<int> clientIDs = server.getClientIDs();
         for (int i = 0; i < clientIDs.size(); i++) {
-            send_json(clientIDs[i], msg);
-            server.wsClose(clientIDs[i]);
+            server.wsSend(clientIDs[i], msg.dump()); // Don't buffer
         }
-        
-        // Reset everything; delete old game object; etc.
-        resetGame();
+        for (int i = 0; i < clientIDs.size(); i++) {
+            server.wsClose(i);
+        }
     }
 }
 
+void resetGame() {
+    delete game_p;
+    game_p = NULL;
+    pregame_player_msgs.clear();
+    send_buffer.clear();
+    receive_buffer.clear();
+    lastUpdateTime = 0;
+}
 
-
-
-int main(int argc, char *argv[]){
+void send_message(int clientID, json msg) {
     
-    int port;
+    // Add time stamp:
+    // Example:
+    // msg["TIME_STAMP"] = timeInMs();
+    
+    // Send the message
+    
+    send_buffer.putMessage(clientID, msg.dump());
+}
 
-    cout << "Please set server port: ";
-    cin >> port;
-
-    /* set event handler */
-    server.setOpenHandler(openHandler);
-    server.setCloseHandler(closeHandler);
-    server.setMessageHandler(messageHandler);
-    server.setPeriodicHandler(periodicHandler);
-
-    /* start the chatroom server, listen to ip '127.0.0.1' and port '8000' */
-    server.startServer(port);
-
-    return 1;
+void read_message(int clientID, string message){
+    
+    // Deserialize message from the string
+    json msg = json::parse(message);
+    
+    if (msg["MESSAGE_TYPE"] == "CLIENT_UPDATE") {
+        
+        // Scenario A: We don't have a game ready yet. This is a pre-game message.
+        if (game_p == NULL) {
+            
+            // Step 1: Put the message in the correct bin.
+            pregame_player_msgs[clientID] = msg;
+            
+            // Step 2: If both bins are filled (2 players ready),
+            // then start a new game.
+            if (pregame_player_msgs.size() == 2) {
+                game_p = new SnakeGame(pregame_player_msgs[0], pregame_player_msgs[1]);
+                pregame_player_msgs.clear();
+            }
+        }
+        
+        // Scenario B: A game already exists. Just forward the message to it.
+        else {
+            game_p->handleClientInput(msg);
+        }
+    }
 }
