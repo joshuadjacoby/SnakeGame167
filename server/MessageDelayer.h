@@ -21,8 +21,9 @@ class MessageDelayer{
     private:
         void updateReleaseTime();
         std::queue <std::pair <int, std::string>> messageQueue;  // FIFO queue holds pairs of (int, string)
-        int maxDelay;                           // the max amount of delay we will create
-        unsigned long long nextReleaseTime;          // don’t release message until this time (in ms, since epoch) 
+        std::binomial_distribution<int> latencyDistribution;  // A binomial distribution to approximate random latency with an upper limit of t millisenconds and expected latency of (0+t)/2.
+        std::default_random_engine randomEngine; // random number engine (required to use binomial_distribution)
+        unsigned long long nextReleaseTime;          // don’t release message until this time (in ms, since epoch)
 };
 
 #endif

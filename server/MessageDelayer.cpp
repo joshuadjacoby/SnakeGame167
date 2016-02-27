@@ -1,8 +1,10 @@
 #include "MessageDelayer.h"
 
 MessageDelayer::MessageDelayer(int Delay) {
-		maxDelay = Delay;
-		nextReleaseTime = 0;   // So that we can identify a brand-new MessageDelayer
+    // Instantiate a binomial distribution with a maximum delay of Delay, and
+    // a probability of 0.5 (i.e., average latency at the midpoint of [0, Delay]).
+    latencyDistribution = std::binomial_distribution<int>(Delay, 0.5);
+    nextReleaseTime = 0;   // So that we can identify a brand-new MessageDelayer
 }
 
 // Inserts a message into the MessageDelayer
@@ -39,7 +41,7 @@ void MessageDelayer::clear() {
 
 // Calculate and set the next time a message will be ready to be released
 void MessageDelayer::updateReleaseTime(){
-	
-    nextReleaseTime = std::chrono::duration_cast<std::chrono::milliseconds>
-		(std::chrono::system_clock::now().time_since_epoch()).count() +(rand() % maxDelay);
-} 
+    int delay = latencyDistribution(randomEngine);
+    unsigned long long currentTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    nextReleaseTime = currentTime + delay;
+}
