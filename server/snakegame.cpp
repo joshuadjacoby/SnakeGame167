@@ -43,10 +43,10 @@ SnakeGame::SnakeGame(json msg1, json msg2) {
 *   "CLIENT_DIRECTION" = int (up/down/left/right constants)
 */
 void SnakeGame::handleClientInput(json clientData) {
-    if (clientData["PLAYER_NUMBER"] == 1) {
+    if (clientData["PLAYER_NUMBER"].get<int>() == 1) {
         player1->direction = clientData["CLIENT_DIRECTION"];
     }
-    else if (clientData["PLAYER_NUMBER"] == 2) {
+    else if (clientData["PLAYER_NUMBER"].get<int>() == 2) {
         player2->direction = clientData["CLIENT_DIRECTION"];
     }
 }
@@ -92,7 +92,7 @@ json SnakeGame::update() {
     
     // 4. Check if a collision occurred with the game boundary
     if (player1->boundaryCheck() || player2->boundaryCheck()) {
-        gameActive = false;
+		gameActive = false;
     }
     
     // Construct and return JSON update bundle

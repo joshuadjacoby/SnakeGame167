@@ -68,8 +68,7 @@ bool Player::occupies(const Position& pos) const {
 
 bool Player::boundaryCheck() const {
     // Check if snake's head touches the perimeter
-    if (head().x <= 0 || head().x >= COLS || head().y <= 0 || head().y >= ROWS)
-        return true;
+	return (head().x <= 0 || head().x >= COLS || head().y <= 0 || head().y >= ROWS);
 }
 
 
