@@ -50,8 +50,10 @@ var GameNetwork = function(serverIP, port) {
                 console.log("Received player assignment as player " + playerNumber);
                 
                 // Send server the first status update
-                console.log("SENDING: " + JSON.stringify(playerStatus()));
-                server.send('message', JSON.stringify(playerStatus()));     
+                var statusUpdate = playerStatus();
+                statusUpdate["TIME_STAMP"] = new Date().getTime();
+                console.log("SENDING: " + JSON.stringify(statusUpdate));
+                server.send('message', JSON.stringify(statusUpdate));     
                 
                 // Start the game
                 main();           
@@ -66,7 +68,7 @@ var GameNetwork = function(serverIP, port) {
             // "T3" = Time the server responded to the request
             // "T4" = Time the client received the server's response
             else if (msgObject["MESSAGE_TYPE"] == "TIME_STAMP_REPLY") {
-                msgObject["T4" = new Date().getTime();] // Record the final time stamp
+                msgObject["T4"] = new Date().getTime(); // Record the final time stamp
                 network_latency = (msgObject["T4"] - msgObject["T1"]) - (msgObject["T3"] - msgObject["T2"]);
             }
             
