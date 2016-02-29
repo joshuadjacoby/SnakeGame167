@@ -22,8 +22,8 @@ webSocket server;
 SnakeGame *game_p = NULL; // A pointer to access the SnakeGame we'll eventually instantiate
 json pregame_player_msgs; // Holding place for messages recevied from clients before game starts
 unsigned long lastUpdateTime = 0; // Keep track of when we last advanced the game state
-MessageDelayer send_buffer(300); // Outgoing message delay buffer
-MessageDelayer receive_buffer(300); // Incoming message delay buffer
+MessageDelayer send_buffer(150); // Outgoing message delay buffer
+MessageDelayer receive_buffer(150); // Incoming message delay buffer
 
 
 /**** FORWARD FUNCTION DECLARATIONS ****/
@@ -225,6 +225,7 @@ void read_message(int clientID, string message){
         
         // Send a time stamp reply for client-side latency estimation
         json tStamps;
+		tStamps["MESSAGE_TYPE"] = "TIME_STAMP_REPLY";
         tStamps["T2"] = chrono::system_clock::now().time_since_epoch() / chrono::milliseconds(1); // Time received
         tStamps["T1"] = msg["TIME_STAMP"]; // Origination time
         tStamps["T3"] = chrono::system_clock::now().time_since_epoch() / chrono::milliseconds(1); // Time replied
