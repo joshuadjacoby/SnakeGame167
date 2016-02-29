@@ -48,6 +48,7 @@ applePosition, /* (x, y) coordinate pair representing the apple location */
 
 running, /* boolean, flags if game is running or not */
 animationFrame, /* the current Window.animationframe (in case we need to kill it) */
+network_latency, /* the most recent latency estimate */
 
 network; /* type: GameNetwork */
 
@@ -387,6 +388,7 @@ function draw() {
 	ctx.fillText(temp, 10, canvas.height - 10);
 	ctx.fillText(player1 + " score: " + score1, 10, canvas.height - 10);
 	ctx.fillText(player2 + " score: " + score2, 180, canvas.height - 10);
+    ctx.fillText(" Network latency: " + network_latency + "ms", 300, canvas.height - 10);
 
 }
 

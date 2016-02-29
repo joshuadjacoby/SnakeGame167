@@ -57,6 +57,19 @@ var GameNetwork = function(serverIP, port) {
                 main();           
             }
             
+            // Time stamps message: contains four time stamps to facilitate latency estimation
+            // using the method described in the NTP protocol specification. Contains the following
+            // fields:
+            // "MESSAGE_TYPE" = "TIME_STAMP_REPLY"
+            // "T1" = Time the request was first sent from the client
+            // "T2" = Time the server received the request
+            // "T3" = Time the server responded to the request
+            // "T4" = Time the client received the server's response
+            else if (msgObject["MESSAGE_TYPE"] == "TIME_STAMP_REPLY") {
+                msgObject["T4" = new Date().getTime();] // Record the final time stamp
+                network_latency = (msgObject["T4"] - msgObject["T1"]) - (msgObject["T3"] - msgObject["T2"]);
+            }
+            
             // A game status update (snake positions, scores, apple position, etc.)
             else if (msgObject["MESSAGE_TYPE"] == "SERVER_UPDATE") {
                 // newServerUpdate is a global var declared and used in snake.js
@@ -83,6 +96,7 @@ var GameNetwork = function(serverIP, port) {
     /* Sends an update bundle to the server (as a serialized JSON string)
     */
     this.sendUpdate = function(clientUpdate) {
+        clientUpdate["TIME_STAMP"] = new Date().getTime(); // Add time stamp
         var outString = JSON.stringify(clientUpdate);
         console.log("SENDING: " + outString);
 	    server.send('message', outString);

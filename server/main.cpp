@@ -213,13 +213,6 @@ void resetGame() {
 }
 
 void send_message(int clientID, json msg) {
-    
-    // Add time stamp:
-    // Example:
-    // msg["TIME_STAMP"] = timeInMs();
-    
-    // Send the message
-    
     send_buffer.putMessage(clientID, msg.dump());
 }
 
@@ -230,6 +223,14 @@ void read_message(int clientID, string message){
     
     if (msg["MESSAGE_TYPE"] == "CLIENT_UPDATE") {
         
+        // Send a time stamp reply for client-side latency estimation
+        json tStamps;
+        tStamps["T2"] = chrono::system_clock::now().time_since_epoch() / chrono::milliseconds(1); // Time received
+        tStamps["T1"] = msg["TIME_STAMP"]; // Origination time
+        tStamps["T3"] = chrono::system_clock::now().time_since_epoch() / chrono::milliseconds(1); // Time replied
+        send_message(clientID, tStamps);
+        
+        // Now, process the client update:
         // Scenario A: We don't have a game ready yet. This is a pre-game message.
         if (game_p == NULL) {
             
