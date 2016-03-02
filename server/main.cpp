@@ -16,7 +16,7 @@
 using namespace std;
 using json = nlohmann::json;
 
-const int UPDATE_CYCLE_LENGTH_MS = 300; // Game only updates once per cycle length
+const int UPDATE_CYCLE_LENGTH_MS = 200; // Game only updates once per cycle length
 
 webSocket server;
 SnakeGame *game_p = NULL; // A pointer to access the SnakeGame we'll eventually instantiate
@@ -107,6 +107,7 @@ void openHandler(int clientID){
         // Send msg: you've been assigned player 2
         msg["MESSAGE_TYPE"] = "PLAYER_ASSIGNMENT";
         msg["PLAYER_NUMBER"] = 2;
+		msg["UPDATE_CYCLE_LENGTH"] = UPDATE_CYCLE_LENGTH_MS;
         send_message(clientID, msg);
     }
     
