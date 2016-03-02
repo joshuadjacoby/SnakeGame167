@@ -36,7 +36,7 @@ var GameNetwork = function(serverIP, port) {
         server.bind('message', function( payload ) {
             
             // DEBUG
-            console.log("RECEIVED: " + payload);
+            console.log("RECEIVED (local frame " + frame + "): " + payload);
             
             // Deserialize the message object from JSON string
             var msgObject = JSON.parse(payload);
@@ -54,9 +54,6 @@ var GameNetwork = function(serverIP, port) {
                 statusUpdate["TIME_STAMP"] = new Date().getTime();
                 console.log("SENDING: " + JSON.stringify(statusUpdate));
                 server.send('message', JSON.stringify(statusUpdate));     
-                
-                // Start the game
-                main();           
             }
             
             // Time stamps message: contains four time stamps to facilitate latency estimation
@@ -75,7 +72,12 @@ var GameNetwork = function(serverIP, port) {
             // A game status update (snake positions, scores, apple position, etc.)
             else if (msgObject["MESSAGE_TYPE"] == "SERVER_UPDATE") {
                 // newServerUpdate is a global var declared and used in snake.js
-                newServerUpdate = msgObject;    
+                newServerUpdate = msgObject; 
+
+                // If this is frame 1, start the game!
+                if (msgObject["CURRENT_FRAME"] == 1) {
+                    main();
+                }   
             }
             
             // Oops! connection was rejected :-(

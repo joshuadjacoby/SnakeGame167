@@ -26,13 +26,13 @@ KEY_W = 87,
 KEY_S = 83,
 KEY_A = 65,
 KEY_D = 68,
+UPDATE_CYCLE_LENGTH_MS = 300, /* Duration of each frame -- same as server */
 /**
  * Game objects
  */
 canvas,	  /* HTMLCanvas */
 ctx,	  /* CanvasRenderingContext2d */
 keystate, /* Object, used for keyboard inputs */
-frames,   /* number, used for animation */
 temp,
 
 myName,
@@ -49,6 +49,9 @@ applePosition, /* (x, y) coordinate pair representing the apple location */
 running, /* boolean, flags if game is running or not */
 animationFrame, /* the current Window.animationframe (in case we need to kill it) */
 network_latency, /* the most recent latency estimate */
+
+frame, /* The current frame number for server synchronization */
+lastUpdateTime, /* the time, in ms, when we last advanced the frame */
 
 network; /* type: GameNetwork */
 
@@ -87,7 +90,9 @@ grid = {
 	 * @param {number} y   the y-coordinate
 	 */
 	set: function(val, x, y) {
-		this._grid[x][y] = val;
+		if (x < this._grid.length && y < this._grid[x].length) {
+		    this._grid[x][y] = val;
+		}
 	},
 	/**
 	 * Get the value of the cell at (x, y)
@@ -113,6 +118,7 @@ snake1 = {
 	last: null,		 /* Object, pointer to the last element in
 						the queue */
 	_queue: null,	 /* Array<number>, data representation*/
+	history: {},   /* List of the direction for each frame. E.g., history[2] = direction @ frame 2 */
 	/**
 	 * Clears the queue and sets the start position and direction
 	 *
@@ -155,6 +161,7 @@ snake1 = {
     last: null,		 /* Object, pointer to the last element in
 						the queue */
     _queue: null,	 /* Array<number>, data representation*/
+    history: {},   /* List of the direction for each frame. E.g., history[2] = direction @ frame 2 */
     /**
 	 * Clears the queue and sets the start position and direction
 	 *
@@ -203,7 +210,7 @@ function main() {
 	document.body.appendChild(canvas);
 	// sets an base font for bigger score display
 	ctx.font = "12px Helvetica";
-	frames = 0;
+	frame = 0;
 	keystate = {};
 	// keeps track of the keybourd input
 	document.addEventListener("keydown", function(evt) {
@@ -247,7 +254,7 @@ function loop() {
 }
 
 /**
- * Checks the key state and updates the local player's direction
+ * Checks the key state and updates the local player's direction.
  */
 function checkKeyState() {
 	
@@ -312,11 +319,38 @@ function checkKeyState() {
  *  "PLAYER_2_SCORE" = player 2's score
  *  "PLAYER_1_QUEUE" = a JSON object containing P1's queue
  *  "PLAYER_2_QUEUE" = a JSON object containing P2's queue
+ *  "PLAYER_1_DIRECTION" = player 1's direction
+ *  "PLAYER_2_DIRECTION" = player 2's direction
  */
 function update() {
-    if (newServerUpdate != null && newServerUpdate != undefined) {
-
-        // Update the variables
+    // If it's too soon for the next frame, do nothing
+    if (new Date().getTime() - lastUpdateTime < UPDATE_CYCLE_LENGTH_MS) {
+        return;
+    }
+    
+    frame++;
+    
+    // Record the current player's direction in the history
+    mySnake().history[frame] = mySnake().direction;
+   
+    // If no news from server, just advance both snakes 1 unit for simulation
+    if (newServerUpdate == null || newServerUpdate == undefined) {
+        advanceSnake(snake1);
+        advanceSnake(snake2);   
+        console.log("Local frame " + frame + ": extrapolating...");
+    }
+    
+    // If we have an update from the server, apply it.
+    else {
+        // First, check if game is over
+        if (newServerUpdate["GAME_STATUS"] == false) {
+            ui.endGame(player1, player2, score1, score2);
+            newServerUpdate = null;
+            running = false;
+            return;
+        }
+                
+        // Apply the data and update the opponent's direction
         player1 = newServerUpdate["PLAYER_1_NAME"];
         player2 = newServerUpdate["PLAYER_2_NAME"];
         score1 = newServerUpdate["PLAYER_1_SCORE"];
@@ -324,32 +358,96 @@ function update() {
         snake1._queue = newServerUpdate["PLAYER_1_QUEUE"];
         snake2._queue = newServerUpdate["PLAYER_2_QUEUE"];
         applePosition = newServerUpdate["APPLE_POSITION"];
- 
-        // First, check if game is over
-        if (newServerUpdate["GAME_STATUS"] == false) {
-            ui.endGame(player1, player2, score1, score2);
-            newServerUpdate = null;
-            return;
+        if (playerNumber == 1) { 
+            snake2.direction = newServerUpdate["PLAYER_2_DIRECTION"];
+        } else {
+            snake1.direction = newServerUpdate["PLAYER_1_DIRECTION"];
         }
-
-        // Clear the grid
-        	grid.init(EMPTY, COLS, ROWS);
-        	
-        	// Write snake 1 onto the grid
-        	for (var i = 0; snake1._queue != null && i < snake1._queue.length; i++) {
-            	grid.set(SNAKE1, snake1._queue[i]["x"], snake1._queue[i]["y"]);
-        	}
-
-        	// Write snake 2 onto the grid
-        	for (var i = 0; snake2._queue != null && i < snake2._queue.length; i++) {
-            	grid.set(SNAKE2, snake2._queue[i]["x"], snake2._queue[i]["y"]);
-        	}
-                        
-        // Write the apple onto the grid
-        grid.set(FRUIT, applePosition["x"], applePosition["y"]);
+        
+        // The server update is always arriving from the past. So, let's 
+        // fast-forward a certain number of frames to compensate.
+        var lag = frame - newServerUpdate["CURRENT_FRAME"];
+        compensateLag(lag);
         
         // Delete the server update; we don't need it anymore
         newServerUpdate = null;        
+    }
+    
+    // Clear the grid
+    	grid.init(EMPTY, COLS, ROWS);
+
+    	// Write snake 1 onto the grid
+    	for (var i = 0; snake1._queue != null && i < snake1._queue.length; i++) {
+        	grid.set(SNAKE1, snake1._queue[i]["x"], snake1._queue[i]["y"]);
+    	}
+
+    	// Write snake 2 onto the grid
+    	for (var i = 0; snake2._queue != null && i < snake2._queue.length; i++) {
+        	grid.set(SNAKE2, snake2._queue[i]["x"], snake2._queue[i]["y"]);
+    	}
+                    
+    // Write the apple onto the grid
+    grid.set(FRUIT, applePosition["x"], applePosition["y"]);
+    
+    // Update the clock
+    lastUpdateTime = new Date().getTime();
+}
+
+/** Advances the snake object one unit for client-side
+ *  prediction purposes.
+ *  @param snakeObject - the snake object to advance
+ */
+function advanceSnake(snake) {
+    // Grab the current head location
+	var nx = snake._queue[0].x;
+	var ny = snake._queue[0].y;
+
+	// Determine new head position (nx, ny)
+	switch (snake.direction) {
+		case LEFT:
+			nx--;
+			break;
+		case UP:
+			ny--;
+			break;
+		case RIGHT:
+			nx++;
+			break;
+		case DOWN:
+			ny++;
+			break;
+	}
+         
+    snake.insert(nx, ny);    
+    	snake.remove();
+}
+
+/** Compensates for lag in server update by fast-forwarding. 
+ *  For the opponent, we simply advance the snake by the 
+ *  number of lag frames, as a guess. But for the player,
+ *  we can do better: we'll replay the forward history
+ *  of the player's actual turns, starting from the frame
+ *  immediately after the old frame in which the server 
+ *  update originated.
+ */
+function compensateLag(lag) {
+    var old_frame = frame - lag;
+    
+    // Replay the local player's forward history (known)
+    for (var i = old_frame + 1; i <= frame; i++) {
+        mySnake().direction = mySnake().history[i];
+        advanceSnake(mySnake());
+    }
+    
+    // Fast-forward the opponent straight ahead (predicted)  
+    var opponentSnake;
+    if (playerNumber == 1) {
+        opponentSnake = snake2;
+    } else {
+        opponentSnake = snake1;
+    }
+    for (var i = 0; i < lag; i++) {
+        advanceSnake(opponentSnake);
     }
 }
 
@@ -431,4 +529,15 @@ function playerStatus() {
         msg["CLIENT_DIRECTION"] = snake2.direction;
     }
     return msg;
+}
+
+/** Returns a reference to the local player's Snake object  
+*/
+function mySnake() {
+    if (playerNumber == 1) {
+        return snake1;
+    }
+    else {
+        return snake2;
+    }
 }
