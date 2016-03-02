@@ -78,7 +78,7 @@ json SnakeGame::update() {
     if (player1->advance(applePosition)) {
         setApple();
     }
-    
+
     // 2. Check if collision happened
     if (Player::collisionCheck(*player1, *player2)) {
         gameActive = false;
@@ -157,9 +157,11 @@ json SnakeGame::statusObject() const {
     j["PLAYER_1_NAME"] = player1->playerName;
     j["PLAYER_1_QUEUE"] = player1->getQueueJSON();
     j["PLAYER_1_SCORE"] = player1->score;
+	j["PLAYER_1_DIRECTION"] = player1->direction;
 
     j["PLAYER_2_NAME"] = player2->playerName;
     j["PLAYER_2_QUEUE"] = player2->getQueueJSON();
     j["PLAYER_2_SCORE"] = player2->score;
+	j["PLAYER_2_DIRECTION"] = player2->direction;
     return j;
 }
