@@ -518,6 +518,7 @@ function initializePlayer(playerNum) {
 function playerStatus() {
     var msg = {};
     msg["MESSAGE_TYPE"] = "CLIENT_UPDATE";
+    msg["CURRENT_FRAME"] = frame;
     msg["PLAYER_NUMBER"] = playerNumber;
     msg["PLAYER_NAME"] = myName;
 
