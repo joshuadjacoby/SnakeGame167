@@ -16,14 +16,14 @@
 using namespace std;
 using json = nlohmann::json;
 
-const int UPDATE_CYCLE_LENGTH_MS = 200; // Game only updates once per cycle length
+const int UPDATE_CYCLE_LENGTH_MS = 300; // Game only updates once per cycle length
 
 webSocket server;
 SnakeGame *game_p = NULL; // A pointer to access the SnakeGame we'll eventually instantiate
 json pregame_player_msgs; // Holding place for messages recevied from clients before game starts
 unsigned long lastUpdateTime = 0; // Keep track of when we last advanced the game state
-MessageDelayer send_buffer(150); // Outgoing message delay buffer
-MessageDelayer receive_buffer(150); // Incoming message delay buffer
+MessageDelayer send_buffer(250); // Outgoing message delay buffer
+MessageDelayer receive_buffer(250); // Incoming message delay buffer
 
 
 /**** FORWARD FUNCTION DECLARATIONS ****/
@@ -98,6 +98,7 @@ void openHandler(int clientID){
         // Send msg: you've been assigned player 1
         msg["MESSAGE_TYPE"] = "PLAYER_ASSIGNMENT";
         msg["PLAYER_NUMBER"] = 1;
+		msg["UPDATE_CYCLE_LENGTH"] = UPDATE_CYCLE_LENGTH_MS;
         send_message(clientID, msg);
     }
     
