@@ -59,9 +59,10 @@ class SnakeGame {
     void setApple();
     
     /** Builds JSON object reporting current game status.
+	 *  @param bool - force clients to resync/override local prediction
      *  @return json the game status
      */
-    json statusObject() const;
+    json statusObject(bool resync = false) const;
     
 };
 

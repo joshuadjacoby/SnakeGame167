@@ -107,6 +107,7 @@ void openHandler(int clientID){
         // Send msg: you've been assigned player 2
         msg["MESSAGE_TYPE"] = "PLAYER_ASSIGNMENT";
         msg["PLAYER_NUMBER"] = 2;
+		msg["UPDATE_CYCLE_LENGTH"] = UPDATE_CYCLE_LENGTH_MS;
         send_message(clientID, msg);
     }
     

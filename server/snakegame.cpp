@@ -43,12 +43,12 @@ SnakeGame::SnakeGame(json msg1, json msg2) {
 *   "CLIENT_DIRECTION" = int (up/down/left/right constants)
 */
 void SnakeGame::handleClientInput(json clientData) {
-    if (clientData["PLAYER_NUMBER"].get<int>() == 1) {
-        player1->direction = clientData["CLIENT_DIRECTION"];
-    }
-    else if (clientData["PLAYER_NUMBER"].get<int>() == 2) {
-        player2->direction = clientData["CLIENT_DIRECTION"];
-    }
+	Player* p;
+	if (clientData["PLAYER_NUMBER"].get<int>() == 1)
+		p = player1;
+	else
+		p = player2;
+	p->direction = clientData["CLIENT_DIRECTION"];
 }
     
 /** Increments the frame counter and advances the players' position by one unit based on
@@ -66,6 +66,8 @@ json SnakeGame::update() {
     // Increment the frame counter
     currentFrame++;
     
+	bool appleEaten = false;
+
     /* Note: The sequence of steps is crucial here. One player must
      * advance first, then a collision check must occur, and then
      * the other player may go. If both players advanced simultaneously,
@@ -77,6 +79,7 @@ json SnakeGame::update() {
     // 1. Advance the first player, and check if apple was eaten.
     if (player1->advance(applePosition)) {
         setApple();
+		appleEaten = true;
     }
 
     // 2. Check if collision happened
@@ -88,6 +91,7 @@ json SnakeGame::update() {
     // 3. Advance the second player, and check if apple was eaten.
     if (player2->advance(applePosition)) {
         setApple();
+		appleEaten = true;
     }
     
     // 4. Check if a collision occurred with the game boundary
@@ -96,7 +100,7 @@ json SnakeGame::update() {
     }
     
     // Construct and return JSON update bundle
-    return statusObject();
+    return statusObject(appleEaten);
 }
 
 /** Returns whether game is active or not
@@ -146,13 +150,22 @@ void SnakeGame::setApple() {
  *  "PLAYER_2_QUEUE" = a JSON object containing P2's queue
  *  "PLAYER_2_SCORE" = player 2's score
  */
-json SnakeGame::statusObject() const {
+json SnakeGame::statusObject(bool resync) const {
     json j;
 
     j["MESSAGE_TYPE"] = "SERVER_UPDATE";
     j["CURRENT_FRAME"] = currentFrame;
     j["APPLE_POSITION"] = applePosition.getJSON();
     j["GAME_STATUS"] = gameActive;
+
+	// Send a resync signal every n frames to
+	// override client-side prediction
+	if (currentFrame % 5 == 0) {
+		j["RESYNC"] = true;
+	}
+	else {
+		j["RESYNC"] = false;
+	}
 
     j["PLAYER_1_NAME"] = player1->playerName;
     j["PLAYER_1_QUEUE"] = player1->getQueueJSON();
