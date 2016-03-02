@@ -47,7 +47,8 @@ var GameNetwork = function(serverIP, port) {
             // can initialize things on the client side
             if (msgObject["MESSAGE_TYPE"] == "PLAYER_ASSIGNMENT") {
                 initializePlayer(msgObject["PLAYER_NUMBER"]);
-                console.log("Received player assignment as player " + playerNumber);
+                updateCycleLength = msgObject["UPDATE_CYCLE_LENGTH"];
+                console.log("Received player assignment as player " + playerNumber +". Update cycle: " + updateCycleLength + " ms.");
                 
                 // Send server the first status update
                 var statusUpdate = playerStatus();

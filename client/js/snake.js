@@ -26,7 +26,6 @@ KEY_W = 87,
 KEY_S = 83,
 KEY_A = 65,
 KEY_D = 68,
-UPDATE_CYCLE_LENGTH_MS = 300, /* Duration of each frame -- same as server */
 /**
  * Game objects
  */
@@ -48,6 +47,7 @@ applePosition, /* (x, y) coordinate pair representing the apple location */
 
 running, /* boolean, flags if game is running or not */
 animationFrame, /* the current Window.animationframe (in case we need to kill it) */
+updateCycleLength, /* in ms, dictated by server */
 network_latency, /* the most recent latency estimate */
 
 frame, /* The current frame number for server synchronization */
@@ -324,7 +324,7 @@ function checkKeyState() {
  */
 function update() {
     // If it's too soon for the next frame, do nothing
-    if (new Date().getTime() - lastUpdateTime < UPDATE_CYCLE_LENGTH_MS) {
+    if (new Date().getTime() - lastUpdateTime < updateCycleLength) {
         return;
     }
     
