@@ -93,7 +93,7 @@ grid = {
 	 * @param {number} y   the y-coordinate
 	 */
 	set: function(val, x, y) {
-		if (x < this._grid.length && y < this._grid[x].length) {
+		if (x >= 0 && x < this._grid.length && y >= 0 && y < this._grid[x].length) {
 		    this._grid[x][y] = val;
 		}
 	},
@@ -340,7 +340,7 @@ function update() {
     localSnake.history[frame] = localSnake.direction;
    
     // Advance both snakes forward as a prediction
-    if (frame >= 2) {
+    if (frame >= 2 ) {
         advanceSnake(localSnake);
         advanceSnake(remoteSnake);   
     }
@@ -376,12 +376,12 @@ function update() {
         compensateLag(remoteSnake, frame_lag);
                 
         // If a RESYNC signal is received, or if this is the first frame, 
-        // replace the local player's queue, and compensate for lag
+        // also replace the local player's queue, and compensate for lag
         if (newServerUpdate["RESYNC"] || frame == 1) {
             if (playerNumber == 1) {
                 localSnake._queue = newServerUpdate["PLAYER_1_QUEUE"];
             } else {
-                localSnake._queue = newServerUpdate["PLAYER_1_QUEUE"];
+                localSnake._queue = newServerUpdate["PLAYER_2_QUEUE"];
             }
             compensateLag(localSnake, frame_lag);
         }
@@ -389,6 +389,9 @@ function update() {
         // Delete the server update; we don't need it anymore
         newServerUpdate = null;        
     }
+
+    // Update the game clock counter
+    lastUpdateTime = new Date().getTime();
 }
 
 
@@ -409,10 +412,7 @@ function writeGrid() {
     	}
                     
     // Write the apple onto the grid
-    grid.set(FRUIT, applePosition["x"], applePosition["y"]);
-    
-    // Update the clock
-    lastUpdateTime = new Date().getTime();
+    grid.set(FRUIT, applePosition["x"], applePosition["y"]);    
 }
 
 /** Advances the snake object one unit for client-side
@@ -454,7 +454,6 @@ function advanceSnake(snake) {
  */
 function compensateLag(snake, lag) {
     var old_frame = frame - lag;
-    
     if (snake === localSnake) {
         for (var i = old_frame + 1; i <= frame; i++) {
             snake.direction = snake.history[i];
@@ -463,9 +462,11 @@ function compensateLag(snake, lag) {
     }
     
     else if (snake === remoteSnake) {
+/*
         for (var i = 0; i < lag; i++) {
             advanceSnake(snake);
         }
+*/
     }
 }
 
@@ -533,6 +534,7 @@ function initializePlayer(playerNum) {
   * "PLAYER_NUMBER" = 1 or 2
   * "PLAYER_NAME" = (player name)
   * "CLIENT_DIRECTION" = int (direction)
+  * "CLIENT_QUEUE" = the local snake's queue
 */
 function playerStatus() {
     var msg = {};
@@ -543,10 +545,12 @@ function playerStatus() {
 
     if (playerNumber == 1) {
         msg["CLIENT_DIRECTION"] = snake1.direction;
+        msg["CLIENT_QUEUE"] = snake1._queue;
     }    
     
     else if (playerNumber == 2) {
         msg["CLIENT_DIRECTION"] = snake2.direction;
+        msg["CLIENT_QUEUE"] = snake2._queue;
     }
     return msg;
 }
