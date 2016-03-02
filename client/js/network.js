@@ -48,6 +48,15 @@ var GameNetwork = function(serverIP, port) {
             if (msgObject["MESSAGE_TYPE"] == "PLAYER_ASSIGNMENT") {
                 initializePlayer(msgObject["PLAYER_NUMBER"]);
                 updateCycleLength = msgObject["UPDATE_CYCLE_LENGTH"];
+
+                if (playerNumber == 1) {
+                    localSnake = snake1;
+                    remoteSnake = snake2;
+                } else {
+                    localSnake = snake2;
+                    remoteSnake = snake1;
+                }
+                
                 console.log("Received player assignment as player " + playerNumber +". Update cycle: " + updateCycleLength + " ms.");
                 
                 // Send server the first status update

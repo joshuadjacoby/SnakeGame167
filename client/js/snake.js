@@ -42,6 +42,9 @@ score1, /* int: player scores */
 score2,
 
 playerNumber, /* int : Player number (1 or 2) assigned from server */
+localSnake,  /* reference to the local player's snake object */
+remoteSnake,  /* reference to the remote player's snake object */
+
 newServerUpdate, /* message object: a server game update ready to be processed */ 
 applePosition, /* (x, y) coordinate pair representing the apple location */
 
@@ -246,6 +249,7 @@ function loop() {
 	
 	checkKeyState();
 	update();
+	writeGrid();
 	draw();
 	
 	// When ready to redraw the canvas call the loop function
@@ -313,6 +317,7 @@ function checkKeyState() {
  *  "MESSAGE_TYPE" = "SERVER_UPDATE",
  *  "CURRENT_FRAME" = the current frame number
  *  "GAME_STATUS" = true/false whether the game is still active
+ *  "RESYNC" = true/false whether we must override local sim with server data
  *  "PLAYER_1_NAME" = player 1's name
  *  "PLAYER_2_NAME" = player 2's name
  *  "PLAYER_1_SCORE" = player 1's score
@@ -329,49 +334,66 @@ function update() {
     }
     
     frame++;
+    console.log("Frame: " + frame);
     
     // Record the current player's direction in the history
-    mySnake().history[frame] = mySnake().direction;
+    localSnake.history[frame] = localSnake.direction;
    
-    // If no news from server, just advance both snakes 1 unit for simulation
-    if (newServerUpdate == null || newServerUpdate == undefined) {
-        advanceSnake(snake1);
-        advanceSnake(snake2);   
-        console.log("Local frame " + frame + ": extrapolating...");
+    // Advance both snakes forward as a prediction
+    if (frame >= 2) {
+        advanceSnake(localSnake);
+        advanceSnake(remoteSnake);   
     }
     
-    // If we have an update from the server, apply it.
-    else {
-        // First, check if game is over
+    // Use the most recent server update, if one is available.
+    if (newServerUpdate != null && newServerUpdate != undefined) {
+        
         if (newServerUpdate["GAME_STATUS"] == false) {
             ui.endGame(player1, player2, score1, score2);
             newServerUpdate = null;
+            localSnake = null;
+            remoteSnake = null;
             running = false;
             return;
         }
-                
-        // Apply the data and update the opponent's direction
+        
         player1 = newServerUpdate["PLAYER_1_NAME"];
         player2 = newServerUpdate["PLAYER_2_NAME"];
         score1 = newServerUpdate["PLAYER_1_SCORE"];
         score2 = newServerUpdate["PLAYER_2_SCORE"];
-        snake1._queue = newServerUpdate["PLAYER_1_QUEUE"];
-        snake2._queue = newServerUpdate["PLAYER_2_QUEUE"];
-        applePosition = newServerUpdate["APPLE_POSITION"];
-        if (playerNumber == 1) { 
-            snake2.direction = newServerUpdate["PLAYER_2_DIRECTION"];
+        applePosition = newServerUpdate["APPLE_POSITION"];                
+        
+        var frame_lag = Math.max(0, frame - newServerUpdate["CURRENT_FRAME"]);
+
+        // Update the remote player's data, and compensate for lag
+        if (playerNumber == 1) {
+            remoteSnake._queue = newServerUpdate["PLAYER_2_QUEUE"];
+            remoteSnake.direction = newServerUpdate["PLAYER_2_DIRECTION"];
         } else {
-            snake1.direction = newServerUpdate["PLAYER_1_DIRECTION"];
+            remoteSnake._queue = newServerUpdate["PLAYER_1_QUEUE"];
+            remoteSnake.direction = newServerUpdate["PLAYER_1_DIRECTION"];
         }
-        
-        // The server update is always arriving from the past. So, let's 
-        // fast-forward a certain number of frames to compensate.
-        var lag = frame - newServerUpdate["CURRENT_FRAME"];
-        compensateLag(lag);
-        
+        compensateLag(remoteSnake, frame_lag);
+                
+        // If a RESYNC signal is received, or if this is the first frame, 
+        // replace the local player's queue, and compensate for lag
+        if (newServerUpdate["RESYNC"] || frame == 1) {
+            if (playerNumber == 1) {
+                localSnake._queue = newServerUpdate["PLAYER_1_QUEUE"];
+            } else {
+                localSnake._queue = newServerUpdate["PLAYER_1_QUEUE"];
+            }
+            compensateLag(localSnake, frame_lag);
+        }
+   
         // Delete the server update; we don't need it anymore
         newServerUpdate = null;        
     }
+}
+
+
+/* Writes data to grid object in preparation for draw() call. */
+function writeGrid() {
     
     // Clear the grid
     	grid.init(EMPTY, COLS, ROWS);
@@ -426,30 +448,27 @@ function advanceSnake(snake) {
  *  For the opponent, we simply advance the snake by the 
  *  number of lag frames, as a guess. But for the player,
  *  we can do better: we'll replay the forward history
- *  of the player's actual turns, starting from the frame
+ *  of the player's known turns, starting from the frame
  *  immediately after the old frame in which the server 
  *  update originated.
  */
-function compensateLag(lag) {
+function compensateLag(snake, lag) {
     var old_frame = frame - lag;
     
-    // Replay the local player's forward history (known)
-    for (var i = old_frame + 1; i <= frame; i++) {
-        mySnake().direction = mySnake().history[i];
-        advanceSnake(mySnake());
+    if (snake === localSnake) {
+        for (var i = old_frame + 1; i <= frame; i++) {
+            snake.direction = snake.history[i];
+            advanceSnake(snake);
+        }
     }
     
-    // Fast-forward the opponent straight ahead (predicted)  
-    var opponentSnake;
-    if (playerNumber == 1) {
-        opponentSnake = snake2;
-    } else {
-        opponentSnake = snake1;
-    }
-    for (var i = 0; i < lag; i++) {
-        advanceSnake(opponentSnake);
+    else if (snake === remoteSnake) {
+        for (var i = 0; i < lag; i++) {
+            advanceSnake(snake);
+        }
     }
 }
+
 
 /**
  * Render the grid to the canvas.
@@ -530,15 +549,4 @@ function playerStatus() {
         msg["CLIENT_DIRECTION"] = snake2.direction;
     }
     return msg;
-}
-
-/** Returns a reference to the local player's Snake object  
-*/
-function mySnake() {
-    if (playerNumber == 1) {
-        return snake1;
-    }
-    else {
-        return snake2;
-    }
 }
