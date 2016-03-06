@@ -1,10 +1,12 @@
 ﻿<!doctype html>
 
-<!--
+<!-- 
+    
     Joshua Jacoby
     Steven Ratcliff
     Jonathan Saavedra
     Source of game code: https://github.com/maxwihlborg/youtube-tutorials/blob/master/snake/index.html  Author: Max Wihlborg
+
 -->
 
 <html lang="en">
@@ -20,8 +22,8 @@
 
     <form id="settings-form">
         <label for="player1">First player</label>        
-        <input type="text" name="player1" id="player1" value="playerName">
-      
+        <input type="text" name="player1" id="player1" value="player1">
+        
         <label for="server-ip">Server IP address</label>        
         <input type="text" name="server-ip" id="server-ip">
         
@@ -40,6 +42,8 @@
 
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>    
     <script src="js/fancywebsocket.js"></script>    
+    <script src="js/ui.js"></script>
+    <script src="js/network.js"></script>
     <script src="js/snake.js"></script>
 </body>
 </html>

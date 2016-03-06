@@ -6,237 +6,255 @@
 #include <string>
 #include <sstream>
 #include <time.h>
+#include <vector>
+#include <chrono>
 #include "websocket.h"
+#include "snakegame.h"
+#include "json.hpp"
+#include "MessageDelayer.h"
 
 using namespace std;
+using json = nlohmann::json;
+
+const int UPDATE_CYCLE_LENGTH_MS = 300; // Game only updates once per cycle length
 
 webSocket server;
-int player_scores[2];
-string player1_name;
-string player2_name;
-string player1queue;
-string player2queue;
-bool player1nameset;
-bool player2nameset;
-bool player1ready;
-bool player2ready;
+SnakeGame *game_p = NULL; // A pointer to access the SnakeGame we'll eventually instantiate
+json pregame_player_msgs; // Holding place for messages recevied from clients before game starts
+unsigned long long lastUpdateTime = 0; // Keep track of when we last advanced the game state
+MessageDelayer send_buffer(500); // Outgoing message delay buffer
+MessageDelayer receive_buffer(500); // Incoming message delay buffer
 
 
-typedef pair<int, int> location;
+/**** FORWARD FUNCTION DECLARATIONS ****/
 
-vector<location> player1_locs;
-vector<location> player2_locs;
+/* Event handler for new network connection open event. 
+ * @param int - client ID
+ */
+void openHandler(int);
 
-const int COLS = 26;
-const int ROWS = 26;
+/** Event handler for incoming message from network.
+ *  @param int - client ID
+ *  @param string - message payload
+ */
+void messageHandler(int, string);
 
-/* called when a client connects */
-void openHandler(int clientID){
-    // If we have few enough connections, accept it. Otherwise, reject.
-    if (server.getClientIDs().size() == 2) {
-        player_scores[0] = 0;
-		player_scores[1] = 0;
-		player1queue = "[{\"x\":13, \"y\" : 25}]";
-		player2queue = "[{\"x\":13, \"y\" : 0}]";
-		player1nameset = false;
-		player2nameset = false;
-		bool player1ready = false;
-		bool player2ready = false;
-		vector<int> clientIDs = server.getClientIDs();
-		for (int i = 0; i < clientIDs.size(); i++)
-			server.wsSend(clientIDs[i], "CONNECTION_READY", false);
-    }
-    if (server.getClientIDs().size() > 2) {
-       server.wsSend(clientID, "CONNECTION_REJECTED", false); // Send rejected msg
-        server.wsClose(clientID);
-    }
+/* Event handler for connection closed event.
+ * @param int - client ID
+ */
+void closeHandler(int);
 
-}
+/* Callback function for main server loop. The underlying
+ * socket library will call this function regularly, perhaps
+ * hundreds of times per second. Any recurrent behavior that
+ * is desired must be invoked here.
+ */
+void periodicHandler();
 
-/* called when a client disconnects */
-void closeHandler(int clientID){
-    ostringstream os;
-    os << "Stranger player has left.";
+/** Resets, purges message buffers, deletes any pointers and resets to NULL */
+void resetGame();
 
-    vector<int> clientIDs = server.getClientIDs();
-    for (int i = 0; i < clientIDs.size(); i++){
-        if (clientIDs[i] != clientID)
-            server.wsSend(clientIDs[i], os.str());
-    }
-}
+/** Sends json object as JSON string-formatted message to specified client
+ *  @param int clientID
+ *  @param json JSON object message
+ */
+void send_message(int, json);
+
+/** Decodes incoming message and takes required action.
+ *  @param int - client ID
+ *  @param string - the message payload
+ */
+void read_message(int, string);
 
 
-/**
-* Set a food id at a random free cell in the grid
-*/
-location setFood(vector<location> a, vector<location> b) {
-	vector<location> empty;
+/**** FUNCTION DEFINITIONS ****/
 
-	for (int x = 0; x < ROWS; x++) {
-		for (int y = 0; y < COLS; y++) {
-			if ((find(a.begin(), a.end(), location(x, y)) == a.end()) && (find(b.begin(), b.end(), location(x, y)) == b.end()))
-					empty.push_back(location(x, y));
-		}
-	}
-
-	//chooses a random cell
-	location randpos = empty[rand() % empty.size()];
-	return randpos;
-
-}
-
-/* called when a client sends a message to the server */
-void messageHandler(int clientID, string message) {
-
-	if (clientID == 0 && player1nameset == false) {
-		player1_name = message;
-		player1nameset = true;
-		if (player1nameset == true && player2nameset == true) {
-			server.wsSend(0, player2_name);
-			server.wsSend(1, player1_name);
-		}
-		return;
-	}
-	if (clientID == 1 && player2nameset == false) {
-		player2_name = message;
-		player2nameset = true;
-		if (player1nameset == true && player2nameset == true) {
-			server.wsSend(0, player2_name);
-			server.wsSend(1, player1_name);
-		}
-		return;
-	}
-
-	if (message == "ready") {
-		if (clientID == 0) {
-			player1ready = true;
-			if (player1ready == true && player2ready == true) {
-				server.wsSend(0, "ready");
-				server.wsSend(1, "ready");
-			}
-		}
-		if (clientID == 1){
-			player2ready = true;
-			if (player1ready == true && player2ready == true) {
-				server.wsSend(0, "ready");
-				server.wsSend(1, "ready");
-			}
-		}
-
-
-	return;
-		}
-
-
-	ostringstream os;
-	vector<int> clientIDs = server.getClientIDs();
-
-
-
-	if (message == "p1score") {
-		if (clientID == 0) {
-			player_scores[0]++;
-			server.wsSend(0, "p1scored");
-			server.wsSend(1, "p2scored");
-		}
-		else {
-			player_scores[1]++;
-			server.wsSend(1, "p1scored");
-			server.wsSend(0, "p2scored");
-		}
-
-		return;
-	}
-
-	if (message == "client" && clientID == 0) {
-		server.wsSend(0, "0");
-		return;
-	}
-
-	if (message == "client" && clientID == 1) {
-		server.wsSend(1, "1");
-		return;
-	}
-
-	if (message == "fruit") {
-		string s;
-		if (clientID == 0)
-			s = player1queue;
-		else
-			s = player2queue;
-		string delimiter = ":";
-
-		size_t startPos = 0;
-		size_t endPos = 0;
-		string x;
-		string y;
-		while ((startPos = s.find(delimiter)) != string::npos) {
-			endPos = s.find(",");
-			x = s.substr(startPos + delimiter.length(), endPos);
-			s.erase(0, endPos);
-			startPos = s.find(delimiter);
-			endPos = s.find("}");
-			y = s.substr(startPos + delimiter.length(), endPos);
-			s.erase(0, endPos);
-			if (clientID == 0)
-				player1_locs.push_back(make_pair(stoi(x), stoi(y)));
-			else
-				player2_locs.push_back(make_pair(stoi(x), stoi(y)));
-		}
-		if (!player1_locs.empty() && !player2_locs.empty()) {
-			location fruit = setFood(player1_locs, player2_locs);
-			string fruitString = to_string(fruit.first) + "/" + to_string(fruit.second);
-			server.wsSend(0, fruitString);
-			server.wsSend(1, fruitString);
-		}
-	}
-	
-	else {
-		if (clientID == 0) {
-			player1queue = message;
-			server.wsSend(0, player2queue);
-		}
-		if (clientID == 1) {
-			player2queue = message;
-			server.wsSend(1, player1queue);
-		}
-	}
-
-
-}
-
-/* called once per select() loop */
-void periodicHandler(){
-    static time_t next = time(NULL) + 10;
-    time_t current = time(NULL);
-    if (current >= next){
-        ostringstream os;
-        string timestring = ctime(&current);
-        timestring = timestring.substr(0, timestring.size() - 1);
-        os << timestring;
-
-        vector<int> clientIDs = server.getClientIDs();
-        for (int i = 0; i < clientIDs.size(); i++)
-            server.wsSend(clientIDs[i], os.str());
-
-        next = time(NULL) + 10;
-    }
-}
-
+/** Main **/
 int main(int argc, char *argv[]){
+    
     int port;
-
+    
     cout << "Please set server port: ";
     cin >> port;
-
+    
     /* set event handler */
     server.setOpenHandler(openHandler);
     server.setCloseHandler(closeHandler);
     server.setMessageHandler(messageHandler);
-    //server.setPeriodicHandler(periodicHandler);
-
-    /* start the chatroom server, listen to ip '127.0.0.1' and port '8000' */
+    server.setPeriodicHandler(periodicHandler);
+    
+    /* start the snake server, listen to ip '127.0.0.1' and port '8000' */
     server.startServer(port);
-
+    
     return 1;
+}
+
+void openHandler(int clientID){
+    
+    json msg; // Our first message to the client
+    
+    // If Player 1 just connected...
+    if (server.getClientIDs().size() == 1) {
+        // Send msg: you've been assigned player 1
+        msg["MESSAGE_TYPE"] = "PLAYER_ASSIGNMENT";
+        msg["PLAYER_NUMBER"] = 1;
+		msg["UPDATE_CYCLE_LENGTH"] = UPDATE_CYCLE_LENGTH_MS;
+        send_message(clientID, msg);
+    }
+    
+    // If Player 2 just connected...
+    else if (server.getClientIDs().size() == 2) {
+        // Send msg: you've been assigned player 2
+        msg["MESSAGE_TYPE"] = "PLAYER_ASSIGNMENT";
+        msg["PLAYER_NUMBER"] = 2;
+		msg["UPDATE_CYCLE_LENGTH"] = UPDATE_CYCLE_LENGTH_MS;
+        send_message(clientID, msg);
+    }
+    
+    // Or if there are too many connections, reject it:
+    else {
+        msg["MESSAGE_TYPE"] = "CONNECTION_REJECTED";
+        send_message(clientID, msg);
+        server.wsClose(clientID);
+    }
+}
+
+void messageHandler(int clientID, string message) {
+    receive_buffer.putMessage(clientID, message);
+}
+
+void closeHandler(int clientID){
+    
+    // If game is ongoing, kill it and send out
+    // an error to whomever is still connected:
+    if (game_p != NULL && game_p->isActive()) {
+        json errorMsg;
+        errorMsg["MESSAGE_TYPE"] = "ERROR";
+        errorMsg["ERROR_MSG"] = "Other player disconnected";
+        
+        // Send the message to whomever is connected
+        vector<int> clientIDs = server.getClientIDs();
+        for (int i = 0; i < clientIDs.size(); i++) {
+            server.wsSend(clientIDs[i], errorMsg.dump()); // Don't buffer
+        }
+        
+        // Close all open connections (must be done separately)
+        clientIDs = server.getClientIDs();
+        for (int i = 0; i < clientIDs.size(); i++) {
+            server.wsClose(i);
+        }
+        resetGame();
+    }
+}
+
+void periodicHandler(){
+    
+    // Poll the incoming & outgoing message buffers.
+    std::pair <int, std::string> message_pair;
+    if (send_buffer.isMessageReady()) {
+        message_pair = send_buffer.getMessage();
+        if (message_pair.first != -1) {
+			json time_check = json::parse(message_pair.second);
+			if (time_check["MESSAGE_TYPE"] == "TIME_STAMP_REPLY") {
+				time_check["T3"] = chrono::system_clock::now().time_since_epoch() / chrono::milliseconds(1);
+				message_pair.second = time_check.dump();
+			}
+            server.wsSend(message_pair.first, message_pair.second);
+        }
+    }
+    if (receive_buffer.isMessageReady()) {
+        message_pair = receive_buffer.getMessage();
+        if (message_pair.first != -1) {
+            read_message(message_pair.first, message_pair.second);
+        }
+    }
+    
+    // If the game is active, update the game state.
+    // We want this to occur no sooner than UPDATE_CYCLE_LENGTH_MS.
+    // WARNING: This sets the pace of the game, so Milestone 4 client features that
+    // perform movement prediction MUST use the same clock speed.
+    if (game_p != NULL && game_p->isActive()) {
+        unsigned long long currentTime = chrono::system_clock::now().time_since_epoch() / chrono::milliseconds(1);
+        if (currentTime - lastUpdateTime >= UPDATE_CYCLE_LENGTH_MS) {
+            // Update the game
+            json msg = game_p->update();
+            
+            // Broadcast the update to all clients
+            vector<int> clientIDs = server.getClientIDs();
+            for (int i = 0; i < clientIDs.size(); i++) {
+                send_message(clientIDs[i], msg);
+            }
+            
+            // Update the clock
+            lastUpdateTime = chrono::system_clock::now().time_since_epoch() / chrono::milliseconds(1);
+        }
+    }
+    
+    // If there is a game object but the status is INACTIVE,
+    // update the clients and then DESTROY the game object.
+    if (game_p != NULL && !game_p->isActive()) {
+
+        json msg = game_p->update();
+        resetGame();
+        
+        // Broadcast the final update to all clients
+        // and then disconnect clients
+        cout << "GAME OVER BROADCASTING FINAL UPDATE" << endl;
+        vector<int> clientIDs = server.getClientIDs();
+        for (int i = 0; i < clientIDs.size(); i++) {
+            server.wsSend(clientIDs[i], msg.dump()); // Don't buffer
+        }
+        for (int i = 0; i < clientIDs.size(); i++) {
+            server.wsClose(i);
+        }
+    }
+}
+
+void resetGame() {
+    delete game_p;
+    game_p = NULL;
+    pregame_player_msgs.clear();
+    send_buffer.clear();
+    receive_buffer.clear();
+    lastUpdateTime = 0;
+}
+
+void send_message(int clientID, json msg) {
+    send_buffer.putMessage(clientID, msg.dump());
+}
+
+void read_message(int clientID, string message){
+    
+    // Deserialize message from the string
+    json msg = json::parse(message);
+    
+    if (msg["MESSAGE_TYPE"] == "CLIENT_UPDATE") {
+        
+        // Send a time stamp reply for client-side latency estimation
+        json tStamps;
+		tStamps["MESSAGE_TYPE"] = "TIME_STAMP_REPLY";
+        tStamps["T2"] = chrono::system_clock::now().time_since_epoch() / chrono::milliseconds(1); // Time received
+        tStamps["T1"] = msg["TIME_STAMP"]; // Origination time
+        send_message(clientID, tStamps);
+        
+        // Now, process the client update:
+        // Scenario A: We don't have a game ready yet. This is a pre-game message.
+        if (game_p == NULL) {
+            
+            // Step 1: Put the message in the correct bin.
+            pregame_player_msgs[clientID] = msg;
+            
+            // Step 2: If both bins are filled (2 players ready),
+            // then start a new game.
+            if (pregame_player_msgs.size() == 2) {
+                game_p = new SnakeGame(pregame_player_msgs[0], pregame_player_msgs[1]);
+                pregame_player_msgs.clear();
+            }
+        }
+        
+        // Scenario B: A game already exists. Just forward the message to it.
+        else {
+            game_p->handleClientInput(msg);
+        }
+    }
 }
