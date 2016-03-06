@@ -61,7 +61,6 @@ var GameNetwork = function(serverIP, port) {
                 
                 // Send server the first status update
                 var statusUpdate = playerStatus();
-                statusUpdate["TIME_STAMP"] = new Date().getTime();
                 console.log("SENDING: " + JSON.stringify(statusUpdate));
                 server.send('message', JSON.stringify(statusUpdate));     
             }
@@ -110,7 +109,6 @@ var GameNetwork = function(serverIP, port) {
     /* Sends an update bundle to the server (as a serialized JSON string)
     */
     this.sendUpdate = function(clientUpdate) {
-        clientUpdate["TIME_STAMP"] = new Date().getTime(); // Add time stamp
         var outString = JSON.stringify(clientUpdate);
         console.log("SENDING: " + outString);
 	    server.send('message', outString);

@@ -21,7 +21,7 @@ const int UPDATE_CYCLE_LENGTH_MS = 300; // Game only updates once per cycle leng
 webSocket server;
 SnakeGame *game_p = NULL; // A pointer to access the SnakeGame we'll eventually instantiate
 json pregame_player_msgs; // Holding place for messages recevied from clients before game starts
-unsigned long lastUpdateTime = 0; // Keep track of when we last advanced the game state
+unsigned long long lastUpdateTime = 0; // Keep track of when we last advanced the game state
 MessageDelayer send_buffer(250); // Outgoing message delay buffer
 MessageDelayer receive_buffer(250); // Incoming message delay buffer
 
@@ -154,6 +154,11 @@ void periodicHandler(){
     if (send_buffer.isMessageReady()) {
         message_pair = send_buffer.getMessage();
         if (message_pair.first != -1) {
+			json time_check = json::parse(message_pair.second);
+			if (time_check["MESSAGE_TYPE"] == "TIME_STAMP_REPLY") {
+				time_check["T3"] = chrono::system_clock::now().time_since_epoch() / chrono::milliseconds(1);
+				message_pair.second = time_check.dump();
+			}
             server.wsSend(message_pair.first, message_pair.second);
         }
     }
@@ -169,7 +174,7 @@ void periodicHandler(){
     // WARNING: This sets the pace of the game, so Milestone 4 client features that
     // perform movement prediction MUST use the same clock speed.
     if (game_p != NULL && game_p->isActive()) {
-        unsigned long currentTime = chrono::system_clock::now().time_since_epoch() / chrono::milliseconds(1);
+        unsigned long long currentTime = chrono::system_clock::now().time_since_epoch() / chrono::milliseconds(1);
         if (currentTime - lastUpdateTime >= UPDATE_CYCLE_LENGTH_MS) {
             // Update the game
             json msg = game_p->update();
@@ -230,7 +235,6 @@ void read_message(int clientID, string message){
 		tStamps["MESSAGE_TYPE"] = "TIME_STAMP_REPLY";
         tStamps["T2"] = chrono::system_clock::now().time_since_epoch() / chrono::milliseconds(1); // Time received
         tStamps["T1"] = msg["TIME_STAMP"]; // Origination time
-        tStamps["T3"] = chrono::system_clock::now().time_since_epoch() / chrono::milliseconds(1); // Time replied
         send_message(clientID, tStamps);
         
         // Now, process the client update:

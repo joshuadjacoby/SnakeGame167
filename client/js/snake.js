@@ -542,6 +542,7 @@ function playerStatus() {
     msg["CURRENT_FRAME"] = frame;
     msg["PLAYER_NUMBER"] = playerNumber;
     msg["PLAYER_NAME"] = myName;
+    msg["TIME_STAMP"] = new Date().getTime();
 
     if (playerNumber == 1) {
         msg["CLIENT_DIRECTION"] = snake1.direction;
