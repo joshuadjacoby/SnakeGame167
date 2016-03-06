@@ -22,8 +22,8 @@ webSocket server;
 SnakeGame *game_p = NULL; // A pointer to access the SnakeGame we'll eventually instantiate
 json pregame_player_msgs; // Holding place for messages recevied from clients before game starts
 unsigned long long lastUpdateTime = 0; // Keep track of when we last advanced the game state
-MessageDelayer send_buffer(500); // Outgoing message delay buffer
-MessageDelayer receive_buffer(500); // Incoming message delay buffer
+MessageDelayer send_buffer(250); // Outgoing message delay buffer
+MessageDelayer receive_buffer(250); // Incoming message delay buffer
 
 
 /**** FORWARD FUNCTION DECLARATIONS ****/
