@@ -43,11 +43,20 @@ SnakeGame::SnakeGame(json msg1, json msg2) {
 *   "CLIENT_DIRECTION" = int (up/down/left/right constants)
 */
 void SnakeGame::handleClientInput(json clientData) {
+	if (!gameActive) {
+		return;
+	}
+	if (clientData["COLLISION_REPORTED"]) {
+		gameActive = false;
+		return;
+	}
+
 	Player* p;
 	if (clientData["PLAYER_NUMBER"].get<int>() == 1)
 		p = player1;
 	else
 		p = player2;
+
 	p->direction = clientData["CLIENT_DIRECTION"];
 }
     
