@@ -58,6 +58,7 @@ lastUpdateTime, /* the time, in ms, when we last advanced the frame */
 
 got_queue,/* a bool to check if the cleint has gotten a queue from the server */
 collision, /* a bool. If client hits a wall, this will be true */
+got_apple, /* a bool. If client has gotten an apple, this will be true */
 
 network; /* type: GameNetwork */
 
@@ -210,6 +211,7 @@ function main() {
     // create and initiate the canvas element
     got_queue = false;
     collision = false;
+    got_apple = false;
 	canvas = document.createElement("canvas");
 	canvas.width = COLS*20;
 	canvas.height = ROWS*20;
@@ -345,10 +347,13 @@ function update() {
     localSnake.history[frame] = localSnake.direction;
    
     // Advance both snakes forward as a prediction
-    if (frame >= 2 ) {
+    if (got_queue) {
         advanceSnake(localSnake);
-        advanceSnake(remoteSnake);   
+        advanceSnake(remoteSnake);
+        boundary_check(localSnake);
     }
+        
+
     
     // Use the most recent server update, if one is available.
     if (newServerUpdate != null && newServerUpdate != undefined) {
@@ -366,7 +371,11 @@ function update() {
         player2 = newServerUpdate["PLAYER_2_NAME"];
         score1 = newServerUpdate["PLAYER_1_SCORE"];
         score2 = newServerUpdate["PLAYER_2_SCORE"];
-        applePosition = newServerUpdate["APPLE_POSITION"];                
+        applePosition = newServerUpdate["APPLE_POSITION"];
+        //score_check = newServerUpdate["SCORE_CORRECTION];
+        //if (!score_check){
+        //  localSnake.remove();
+        //}
         
         var frame_lag = Math.max(0, frame - newServerUpdate["CURRENT_FRAME"]);
 
@@ -388,7 +397,6 @@ function update() {
             } else {
                 localSnake._queue = newServerUpdate["PLAYER_2_QUEUE"];
             }
-            compensateLag(localSnake, frame_lag);
             got_queue = true;
         }
    
@@ -446,8 +454,31 @@ function advanceSnake(snake) {
 			break;
 	}
          
-    snake.insert(nx, ny);    
-    	snake.remove();
+	snake.insert(nx, ny);
+	check_apple(localSnake);
+	if (!got_apple)
+	    snake.remove();
+	else {
+	    network.sendUpdate(playerStatus());
+	    got_apple = false;
+	}
+}
+
+function boundary_check(snake) {
+    var nx = snake._queue[0].x;
+    var ny = snake._queue[0].y;
+
+    if (0 > nx || nx > grid.width - 1 ||
+			0 > ny || ny > grid.height - 1)
+        collision = true;
+}
+
+function check_apple(snake) {
+    var nx = snake._queue[0].x;
+    var ny = snake._queue[0].y;
+    if (grid.get(nx, ny) === FRUIT) {
+        got_apple = true;
+    }
 }
 
 /** Compensates for lag in server update by fast-forwarding. 
@@ -551,6 +582,7 @@ function playerStatus() {
     msg["TIME_STAMP"] = new Date().getTime();
     msg["FRAME"] = frame;
     msg["COLLISION"] = collision;
+    msg["GOTAPPLE"] = got_apple;
 
     if (playerNumber == 1) {
         msg["CLIENT_DIRECTION"] = snake1.direction;
