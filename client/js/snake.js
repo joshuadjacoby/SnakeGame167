@@ -56,6 +56,9 @@ network_latency, /* the most recent latency estimate */
 frame, /* The current frame number for server synchronization */
 lastUpdateTime, /* the time, in ms, when we last advanced the frame */
 
+got_queue,/* a bool to check if the cleint has gotten a queue from the server */
+collision, /* a bool. If client hits a wall, this will be true */
+
 network; /* type: GameNetwork */
 
 /**
@@ -204,7 +207,9 @@ snake1 = {
  * Starts the game
  */
 function main() {
-	// create and initiate the canvas element
+    // create and initiate the canvas element
+    got_queue = false;
+    collision = false;
 	canvas = document.createElement("canvas");
 	canvas.width = COLS*20;
 	canvas.height = ROWS*20;
@@ -377,13 +382,14 @@ function update() {
                 
         // If a RESYNC signal is received, or if this is the first frame, 
         // also replace the local player's queue, and compensate for lag
-        if (newServerUpdate["RESYNC"] || frame == 1) {
+        if (!got_queue) {
             if (playerNumber == 1) {
                 localSnake._queue = newServerUpdate["PLAYER_1_QUEUE"];
             } else {
                 localSnake._queue = newServerUpdate["PLAYER_2_QUEUE"];
             }
             compensateLag(localSnake, frame_lag);
+            got_queue = true;
         }
    
         // Delete the server update; we don't need it anymore
@@ -462,11 +468,11 @@ function compensateLag(snake, lag) {
     }
     
     else if (snake === remoteSnake) {
-/*
+
         for (var i = 0; i < lag; i++) {
             advanceSnake(snake);
         }
-*/
+
     }
 }
 
@@ -543,6 +549,8 @@ function playerStatus() {
     msg["PLAYER_NUMBER"] = playerNumber;
     msg["PLAYER_NAME"] = myName;
     msg["TIME_STAMP"] = new Date().getTime();
+    msg["FRAME"] = frame;
+    msg["COLLISION"] = collision;
 
     if (playerNumber == 1) {
         msg["CLIENT_DIRECTION"] = snake1.direction;
