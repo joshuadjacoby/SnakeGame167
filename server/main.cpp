@@ -21,7 +21,6 @@ const int UPDATE_CYCLE_LENGTH_MS = 300; // Game only updates once per cycle leng
 webSocket server;
 SnakeGame *game_p = NULL; // A pointer to access the SnakeGame we'll eventually instantiate
 json pregame_player_msgs; // Holding place for messages recevied from clients before game starts
-unsigned long long lastUpdateTime = 0; // Keep track of when we last advanced the game state
 MessageDelayer send_buffer(250); // Outgoing message delay buffer
 MessageDelayer receive_buffer(250); // Incoming message delay buffer
 
@@ -53,6 +52,12 @@ void periodicHandler();
 
 /** Resets, purges message buffers, deletes any pointers and resets to NULL */
 void resetGame();
+
+/** Broadcasts a message to both connected clients. 
+  * @param json JSON object message
+  * @param bool Whether message should be buffered or sent immediately
+  */
+void broadcast_message(json, bool buffered = true);
 
 /** Sends json object as JSON string-formatted message to specified client
  *  @param int clientID
@@ -169,44 +174,10 @@ void periodicHandler(){
         }
     }
     
-    // If the game is active, update the game state.
-    // We want this to occur no sooner than UPDATE_CYCLE_LENGTH_MS.
-    // WARNING: This sets the pace of the game, so Milestone 4 client features that
-    // perform movement prediction MUST use the same clock speed.
-    if (game_p != NULL && game_p->isActive()) {
-        unsigned long long currentTime = chrono::system_clock::now().time_since_epoch() / chrono::milliseconds(1);
-        if (currentTime - lastUpdateTime >= UPDATE_CYCLE_LENGTH_MS) {
-            // Update the game
-            json msg = game_p->update();
-            
-            // Broadcast the update to all clients
-            vector<int> clientIDs = server.getClientIDs();
-            for (int i = 0; i < clientIDs.size(); i++) {
-                send_message(clientIDs[i], msg);
-            }
-            
-            // Update the clock
-            lastUpdateTime = chrono::system_clock::now().time_since_epoch() / chrono::milliseconds(1);
-        }
-    }
-    
     // If there is a game object but the status is INACTIVE,
     // update the clients and then DESTROY the game object.
     if (game_p != NULL && !game_p->isActive()) {
 
-        json msg = game_p->update();
-        resetGame();
-        
-        // Broadcast the final update to all clients
-        // and then disconnect clients
-        cout << "GAME OVER BROADCASTING FINAL UPDATE" << endl;
-        vector<int> clientIDs = server.getClientIDs();
-        for (int i = 0; i < clientIDs.size(); i++) {
-            server.wsSend(clientIDs[i], msg.dump()); // Don't buffer
-        }
-        for (int i = 0; i < clientIDs.size(); i++) {
-            server.wsClose(i);
-        }
     }
 }
 
@@ -216,7 +187,16 @@ void resetGame() {
     pregame_player_msgs.clear();
     send_buffer.clear();
     receive_buffer.clear();
-    lastUpdateTime = 0;
+}
+
+void broadcast_message(json msg, bool buffered) {
+	vector<int> clientIDs = server.getClientIDs();
+	for (int i = 0; i < clientIDs.size(); i++) {
+		if (buffered)
+			send_message(clientIDs[i], msg);
+		else
+			server.wsSend(clientIDs[i], msg.dump());
+	}
 }
 
 void send_message(int clientID, json msg) {
@@ -248,13 +228,29 @@ void read_message(int clientID, string message){
             // then start a new game.
             if (pregame_player_msgs.size() == 2) {
                 game_p = new SnakeGame(pregame_player_msgs[0], pregame_player_msgs[1]);
+				broadcast_message(game_p->getUpdate());
                 pregame_player_msgs.clear();
             }
         }
         
-        // Scenario B: A game already exists. Just forward the message to it.
+        // Scenario B: A game already exists. Just forward the message to it, and broadcast
+		// the returned status update.
         else {
-            game_p->handleClientInput(msg);
+            json gameState = game_p->handleClientInput(msg);
+			
+			// If game is over, wrap things up.
+			if (!game_p->isActive()) {
+				cout << "GAME OVER. BROADCASTING FINAL UPDATE." << endl;
+				resetGame();
+				broadcast_message(gameState, false); // Don't buffer -- we're about to close the connections.
+				vector<int> clientIDs = server.getClientIDs();
+				for (int i = 0; i < clientIDs.size(); i++) {
+					server.wsClose(i);
+				}
+			}
+			else {
+				broadcast_message(gameState);
+			}
         }
     }
 }

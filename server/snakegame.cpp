@@ -28,7 +28,6 @@ SnakeGame::SnakeGame(json msg1, json msg2) {
     player2 = new Player(msg2["PLAYER_NAME"], DOWN, Position(CENTER_COLUMN, 0));
     
     // Initialize game state
-    currentFrame = 0;
     setApple();
     gameActive = true;
 }
@@ -40,15 +39,15 @@ SnakeGame::SnakeGame(json msg1, json msg2) {
 *   
 *   "MESSAGE_TYPE" = "CLIENT_UPDATE"
 *   "PLAYER_NUMBER" = int (1 or 2)
+*   "CURRENT_FRAME" = the client's current frame number
 *   "CLIENT_DIRECTION" = int (up/down/left/right constants)
+*   "COLLISION" = true or false: is the client reporting a collision
 */
-void SnakeGame::handleClientInput(json clientData) {
-	if (!gameActive) {
-		return;
-	}
-	if (clientData["COLLISION_REPORTED"]) {
+json SnakeGame::handleClientInput(json clientData) {
+	// Check for game-over condition
+	if (!gameActive || clientData["COLLISION"]) {
 		gameActive = false;
-		return;
+		return statusObject();
 	}
 
 	Player* p;
@@ -57,60 +56,24 @@ void SnakeGame::handleClientInput(json clientData) {
 	else
 		p = player2;
 
+	// update the player object
 	p->direction = clientData["CLIENT_DIRECTION"];
+	p->currentFrame = clientData["CURRENT_FRAME"];
+	bool appleEaten = p->advance(applePosition);
+	if (appleEaten) {
+		setApple();
+	}
+
+	return statusObject();
 }
     
-/** Increments the frame counter and advances the players' position by one unit based on
- *  their last-known direction.
- *  @return a JSON object containing the complete game state after the update (to be broadcast to both players)
- */
-json SnakeGame::update() {
-
-    // Check to see if game is over. In this case, return a status message
-    // but don't increment the game counter or do anything else.
-    if (!gameActive) {
-        return statusObject();
-    }
-    
-    // Increment the frame counter
-    currentFrame++;
-    
-	bool appleEaten = false;
-
-    /* Note: The sequence of steps is crucial here. One player must
-     * advance first, then a collision check must occur, and then
-     * the other player may go. If both players advanced simultaneously,
-     * before the collision check, they could effectively pass through
-     * each other without triggering a collision. Finally, at the end,
-     * both players must be checked for a collision with the outer boundary.
-     */
-    
-    // 1. Advance the first player, and check if apple was eaten.
-    if (player1->advance(applePosition)) {
-        setApple();
-		appleEaten = true;
-    }
-
-    // 2. Check if collision happened
-    if (Player::collisionCheck(*player1, *player2)) {
-        gameActive = false;
-        return statusObject();
-    }
-    
-    // 3. Advance the second player, and check if apple was eaten.
-    if (player2->advance(applePosition)) {
-        setApple();
-		appleEaten = true;
-    }
-    
-    // 4. Check if a collision occurred with the game boundary
-    if (player1->boundaryCheck() || player2->boundaryCheck()) {
-		gameActive = false;
-    }
-    
-    // Construct and return JSON update bundle
-    return statusObject(appleEaten);
+/** Returns json server update object reflecting game's latest information.
+* @return json - server update
+*/
+json SnakeGame::getUpdate() {
+	return statusObject();
 }
+
 
 /** Returns whether game is active or not
  *  @return bool active or inactive
@@ -149,41 +112,36 @@ void SnakeGame::setApple() {
  *  Status object contains at least the following key-value pairs (but more can be added downstream):
  *
  *  "MESSAGE_TYPE" = "SERVER_UPDATE",
- *  "CURRENT_FRAME" = the current frame number
  *  "APPLE_POSITION" = a JSON object containing the (x,y) coords for the food
  *  "GAME_STATUS" = true/false whether the game is still active
  *  "PLAYER_1_NAME" = player 1's name
  *  "PLAYER_1_QUEUE" = a JSON object containing P1's queue
  *  "PLAYER_1_SCORE" = player 1's score
+ *  "PLAYER_1_DIRECTION" = player 1's last direction
+ *  "PLAYER_1_FRAME" = the frame # associated with Player 1's latest position
  *  "PLAYER_2_NAME" = player 2's name
  *  "PLAYER_2_QUEUE" = a JSON object containing P2's queue
  *  "PLAYER_2_SCORE" = player 2's score
+ *  "PLAYER_2_DIRECTION" player 2's last direction
+ *  "PLAYER_2_FRAME" = the frame # associated with Player 2's latest position
  */
 json SnakeGame::statusObject(bool resync) const {
     json j;
-
     j["MESSAGE_TYPE"] = "SERVER_UPDATE";
-    j["CURRENT_FRAME"] = currentFrame;
     j["APPLE_POSITION"] = applePosition.getJSON();
     j["GAME_STATUS"] = gameActive;
-
-	// Send a resync signal every n frames to
-	// override client-side prediction
-	if (currentFrame % 5 == 0) {
-		j["RESYNC"] = true;
-	}
-	else {
-		j["RESYNC"] = false;
-	}
+	j["RESYNC"] = resync;
 
     j["PLAYER_1_NAME"] = player1->playerName;
     j["PLAYER_1_QUEUE"] = player1->getQueueJSON();
     j["PLAYER_1_SCORE"] = player1->score;
 	j["PLAYER_1_DIRECTION"] = player1->direction;
+	j["PLAYER_1_FRAME"] = player1->currentFrame;
 
     j["PLAYER_2_NAME"] = player2->playerName;
     j["PLAYER_2_QUEUE"] = player2->getQueueJSON();
     j["PLAYER_2_SCORE"] = player2->score;
 	j["PLAYER_2_DIRECTION"] = player2->direction;
+	j["PLAYER_2_FRAME"] = player2->currentFrame;
     return j;
 }

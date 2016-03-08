@@ -29,15 +29,15 @@ class SnakeGame {
     
     /** Receives JSON update from client and updates client's data.
      *  @param clientData - the json update message received from a client
+	 *  @return json - server update reflecting the latest information
      */
-    void handleClientInput(json clientData);
+    json handleClientInput(json clientData);
     
-    /** Increments the frame counter and advances the players' position by one unit based on
-     *  their last-known direction.
-     *  @return a JSON object containing the complete game state after the update (to be broadcast to both players)
-     */
-    json update();
-    
+	/** Returns json server update object reflecting game's latest information. 
+	  * @return json - server update
+	  */
+	json getUpdate();
+
     /** Returns whether game is active or not
      *  @return bool active or inactive
      */
@@ -50,21 +50,20 @@ class SnakeGame {
     
     Player* player1;
     Player* player2;
-    int currentFrame; // The current logical frame of the game
     bool gameActive; // Whether the game is still active or has terminated
     Position applePosition; // The current location of the apple
+	
     
     /** Sets a new apple position.
      */
     void setApple();
     
     /** Builds JSON object reporting current game status.
-	 *  @param bool - force clients to resync/override local prediction
+	 *  @param bool - force clients to resync/override all local prediction
      *  @return json the game status
      */
     json statusObject(bool resync = false) const;
     
 };
-
 
 #endif /* snakegame_h */

@@ -13,6 +13,7 @@ Player::Player(std::string nom, int dir, Position startPos) {
     direction = dir;
     queue.push_back(startPos);
     score = 0;
+	currentFrame = 1;
 }
 
 Position Player::head() const {

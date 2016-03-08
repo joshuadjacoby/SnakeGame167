@@ -22,6 +22,7 @@ public:
     std::string playerName;
     int direction;
     int score;
+	int currentFrame;
     
     /** Constructor 
      *  @param string - player name
