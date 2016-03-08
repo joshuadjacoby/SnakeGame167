@@ -53,7 +53,7 @@ animationFrame, /* the current Window.animationframe (in case we need to kill it
 updateCycleLength, /* in ms, dictated by server */
 network_latency, /* the most recent latency estimate */
 
-frame, /* The current frame number for server synchronization */
+frame = 0, /* The current frame number for server synchronization */
 lastUpdateTime, /* the time, in ms, when we last advanced the frame */
 
 got_queue,/* a bool to check if the cleint has gotten a queue from the server */
@@ -353,8 +353,6 @@ function update() {
         boundary_check(localSnake);
     }
         
-
-    
     // Use the most recent server update, if one is available.
     if (newServerUpdate != null && newServerUpdate != undefined) {
         
@@ -377,15 +375,17 @@ function update() {
         //  localSnake.remove();
         //}
         
-        var frame_lag = Math.max(0, frame - newServerUpdate["CURRENT_FRAME"]);
+        var frame_lag;
 
         // Update the remote player's data, and compensate for lag
         if (playerNumber == 1) {
             remoteSnake._queue = newServerUpdate["PLAYER_2_QUEUE"];
             remoteSnake.direction = newServerUpdate["PLAYER_2_DIRECTION"];
+            frame_lag = Math.max(0, frame - newServerUpdate["PLAYER_2_FRAME"]);
         } else {
             remoteSnake._queue = newServerUpdate["PLAYER_1_QUEUE"];
             remoteSnake.direction = newServerUpdate["PLAYER_1_DIRECTION"];
+            frame_lag = Math.max(0, frame - newServerUpdate["PLAYER_1_FRAME"]);
         }
         compensateLag(remoteSnake, frame_lag);
                 
@@ -483,22 +483,16 @@ function check_apple(snake) {
 
 /** Compensates for lag in server update by fast-forwarding. 
  *  For the opponent, we simply advance the snake by the 
- *  number of lag frames, as a guess. But for the player,
- *  we can do better: we'll replay the forward history
- *  of the player's known turns, starting from the frame
- *  immediately after the old frame in which the server 
- *  update originated.
+ *  number of lag frames, as a prediction.
+ *  
+ *  For the player, we don't need any compensation because the
+ *  client is always deemed authoritative over its own 
+ *  snake object (i.e., it's treated as a locked object).
  */
 function compensateLag(snake, lag) {
     var old_frame = frame - lag;
-    if (snake === localSnake) {
-        for (var i = old_frame + 1; i <= frame; i++) {
-            snake.direction = snake.history[i];
-            advanceSnake(snake);
-        }
-    }
     
-    else if (snake === remoteSnake) {
+    if (snake === remoteSnake) {
 
         for (var i = 0; i < lag; i++) {
             advanceSnake(snake);
@@ -582,7 +576,7 @@ function playerStatus() {
     msg["TIME_STAMP"] = new Date().getTime();
     msg["FRAME"] = frame;
     msg["COLLISION"] = collision;
-    msg["GOTAPPLE"] = got_apple;
+    msg["GOT_APPLE"] = got_apple;
 
     if (playerNumber == 1) {
         msg["CLIENT_DIRECTION"] = snake1.direction;

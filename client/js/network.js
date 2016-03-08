@@ -84,7 +84,7 @@ var GameNetwork = function(serverIP, port) {
                 newServerUpdate = msgObject; 
 
                 // If this is frame 1, start the game!
-                if (msgObject["CURRENT_FRAME"] == 1) {
+                if (msgObject["PLAYER_1_FRAME"] == 1 && msgObject["PLAYER_2_FRAME"] == 1) {
                     main();
                 }   
             }
