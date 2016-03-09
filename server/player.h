@@ -22,6 +22,7 @@ public:
     std::string playerName;
     int direction;
     int score;
+	std::deque<Position> queue;
     
     /** Constructor 
      *  @param string - player name
@@ -58,6 +59,8 @@ public:
      *  @param const Player& - the other player
      */
     static bool collisionCheck(const Player&, const Player&);
+
+	void update_queue(json new_queue);
     
 protected:
     
@@ -65,7 +68,7 @@ protected:
     // The front of the queue is the TAIL of the snake; while the
     // back of the queue is the HEAD (i.e., the node that will be
     // last to pop off the queue as the snake moves.)
-    std::deque<Position> queue;
+    
     
 };
 

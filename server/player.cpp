@@ -5,6 +5,7 @@
  */
 
 #include "player.h"
+#include <typeinfo>
 
 using json = nlohmann::json;
 
@@ -86,4 +87,15 @@ bool Player::collisionCheck(const Player &p1, const Player &p2) {
     }
     // Otherwise, return false
     return false;
+}
+
+void Player::update_queue(json new_queue) {
+	queue.clear();
+	for (auto iter = new_queue.begin(); iter != new_queue.end(); iter++){
+		auto position = iter.value();
+		int x = position.at("x");
+		int y = position.at("y");
+		Position head(x,y);
+		queue.push_front(head);
+	}
 }

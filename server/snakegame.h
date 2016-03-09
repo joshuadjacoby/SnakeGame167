@@ -53,6 +53,11 @@ class SnakeGame {
     int currentFrame; // The current logical frame of the game
     bool gameActive; // Whether the game is still active or has terminated
     Position applePosition; // The current location of the apple
+	bool player1Collision;
+	bool player2Collision;
+	bool player1Wrong;
+	bool player2Wrong;
+
     
     /** Sets a new apple position.
      */
@@ -62,7 +67,7 @@ class SnakeGame {
 	 *  @param bool - force clients to resync/override local prediction
      *  @return json the game status
      */
-    json statusObject(bool resync = false) const;
+    json statusObject() ;
     
 };
 
