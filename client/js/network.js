@@ -21,15 +21,15 @@ var GameNetwork = function(serverIP, port) {
         
         // (1) Open event -- We're connected!
         server.bind('open', function() {
-            ui.showConnectionStatus(true);
+            ui.showConnectionStatus("waiting");
         });
         
         // (2) Disconnection event
         server.bind('close', function( data ) {
-            ui.showConnectionStatus(false); // Update the notification strip
-            // Stop the game, if it's running?
-            // ...
-            // ...
+            if (running) {
+                ui.showConnectionStatus(false); // Update the notification strip
+                running = false;
+            }
         });
         
         // (3) Message event -- message received from server

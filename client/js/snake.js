@@ -223,6 +223,8 @@ function main() {
 	document.body.appendChild(canvas);
 	// sets an base font for bigger score display
 	ctx.font = "12px Helvetica";
+	ui.showConnectionStatus("active");
+    ui.setGameBorder(playerNumber); // Make border match user color
 	frame = 0;
 	keystate = {};
 	// keeps track of the keybourd input

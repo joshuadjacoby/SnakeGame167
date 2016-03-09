@@ -18,10 +18,10 @@
 
 <body>
 
-    <h4 id="connection-status">No server connection</h4>
-
+    <h4 id="connection-status">Not connected</h4>
+    <img src="img/snake167_logo.png"/>
     <form id="settings-form">
-        <label for="player1">First player</label>        
+        <label for="player1">Player name</label>        
         <input type="text" name="player1" id="player1" value="player1">
         
         <label for="server-ip">Server IP address</label>        
@@ -30,15 +30,16 @@
         <label for="port">Port</label>        
         <input type="text" name="port" id="port">
         
-        <input type="button" id="submit" value="Connect and Play">
+        <input class="btn" type="button" id="submit" value="Start Game">
     </form>
     
     <div id="msg-panel">
         <h1 id="msg-headline"></h1>
         <p id="msg-body"></p>
-        <input type="button" id="restart-btn" value="Play again"/>        
+        <input class="btn" type="button" id="restart-btn" value="Play again"/>        
     </div>    
         
+    <img src="img/snake167_footer.png"/>
 
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>    
     <script src="js/fancywebsocket.js"></script>    
