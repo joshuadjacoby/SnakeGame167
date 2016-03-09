@@ -66,23 +66,33 @@ void SnakeGame::handleClientInput(json clientData) {
 	//The only time GOT_APPLE is true is when a client thinks it got an apple.
 	if (clientData["GOT_APPLE"]) {
 		if (check_previous(time_stamp)) {
-			if (p == player1)
+			if (p == player1) {
 				player2Wrong = true;
-			else
+				--player2->score;
+				++player1->score;
+			}
+			else {
+				++player2->score;
+				--player1->score;
 				player1Wrong = true;
+			}
 		}
 		else if (applePosition != p->head()) {
 			if (p == player1) {
 				player1Wrong = true;
+				--player1->score;
 			}
-			else
+			else {
 				player2Wrong = true;
+				--player2->score;
+			}
 		}
 		else {
 			if (previous_apples.size() == 5) {
 				previous_apples.pop_front();
 			}
 			//records when the client got the apple on their end.
+			++p->score;
 			previous_apples.push_back(time_stamp);
 			setApple();
 		}
