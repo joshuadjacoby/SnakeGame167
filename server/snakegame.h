@@ -9,6 +9,7 @@
 
 #include "json.hpp"
 #include <deque>
+#include <list>
 #include <string>
 #include "player.h"
 #include "position.h"
@@ -57,6 +58,7 @@ class SnakeGame {
 	bool player2Collision;
 	bool player1Wrong;
 	bool player2Wrong;
+	std::list<unsigned long long> previous_apples;
 
     
     /** Sets a new apple position.
@@ -68,6 +70,8 @@ class SnakeGame {
      *  @return json the game status
      */
     json statusObject() ;
+
+	bool check_previous(unsigned long long time_stamp);
     
 };
 

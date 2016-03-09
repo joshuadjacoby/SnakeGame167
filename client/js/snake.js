@@ -480,7 +480,8 @@ function boundary_check(snake) {
     var nx = snake._queue[0].x;
     var ny = snake._queue[0].y;
 
-    if (0 >= nx || nx >= grid.width - 1 || 0 >= ny || ny >= grid.height - 1) {
+    if (0 >= nx || nx >= grid.width - 1 || 0 >= ny || ny >= grid.height - 1 ||
+        grid.get(nx, ny) === SNAKE1 ) {
         collision = true;
     }
 
@@ -504,11 +505,10 @@ function check_apple(snake) {
  *  snake object (i.e., it's treated as a locked object).
  */
 function compensateLag(snake, lag) {
-    var old_frame = frame - lag;
     
-    if (snake === remoteSnake) {
+    if (snake == remoteSnake) {
 
-        for (var i = 0; i < lag; i++) {
+        for (var i = 0; i <= lag; i++) {
             advanceSnake(snake);
         }
 

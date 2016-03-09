@@ -5,6 +5,7 @@
  */
 
 #include "json.hpp"
+#include <chrono>
 #include <string>
 #include <stdio.h>
 #include <stdlib.h>
@@ -53,13 +54,24 @@ void SnakeGame::handleClientInput(json clientData) {
 	else
 		p = player2;
 	p->direction = clientData["CLIENT_DIRECTION"];
+	//makes sure the player has gotten a queue from the server first.
 	if (clientData["GOT_QUEUE"]) {
 		json queue = clientData["CLIENT_QUEUE"];
 		p->update_queue(queue);
 	}
 
+	unsigned long long time_stamp = clientData["TIME_STAMP"];
+	//checks to see if the GOT_APPLE was valid, if not server sends a message telling the player they are wrong
+	//For fairness, it also checks the times where previous clients gotten an apple.
+	//The only time GOT_APPLE is true is when a client thinks it got an apple.
 	if (clientData["GOT_APPLE"]) {
-		if (applePosition != p->head()) {
+		if (check_previous(time_stamp)) {
+			if (p == player1)
+				player2Wrong = true;
+			else
+				player1Wrong = true;
+		}
+		else if (applePosition != p->head()) {
 			if (p == player1) {
 				player1Wrong = true;
 			}
@@ -67,6 +79,11 @@ void SnakeGame::handleClientInput(json clientData) {
 				player2Wrong = true;
 		}
 		else {
+			if (previous_apples.size() == 5) {
+				previous_apples.pop_front();
+			}
+			//records when the client got the apple on their end.
+			previous_apples.push_back(time_stamp);
 			setApple();
 		}
 	}
@@ -79,6 +96,7 @@ void SnakeGame::handleClientInput(json clientData) {
 		else
 			player2Collision = true;
 	}
+
 }
     
 /** Increments the frame counter and advances the players' position by one unit based on
@@ -96,35 +114,14 @@ json SnakeGame::update() {
     // Increment the frame counter
     currentFrame++;
     
-	bool appleEaten = false;
-
-    /* Note: The sequence of steps is crucial here. One player must
-     * advance first, then a collision check must occur, and then
-     * the other player may go. If both players advanced simultaneously,
-     * before the collision check, they could effectively pass through
-     * each other without triggering a collision. Finally, at the end,
-     * both players must be checked for a collision with the outer boundary.
-     */
-    /*
-    // 1. Advance the first player, and check if apple was eaten.
-    if (player1->advance(applePosition)) {
-        setApple();
-		appleEaten = true;
-    }
-	*/
-    // 2. Check if collision happened
+    // Check if collision happened
     if (Player::collisionCheck(*player1, *player2)) {
         gameActive = false;
         return statusObject();
     }
-    /*
-    // 3. Advance the second player, and check if apple was eaten.
-    if (player2->advance(applePosition)) {
-        setApple();
-		appleEaten = true;
-    }
-    */
-    // 4. Check if a collision occurred with the game boundary
+
+	
+    //Check if a collision occurred with the game boundary
     if (player1Collision || player2Collision) {
 		gameActive = false;
     }
@@ -149,7 +146,16 @@ SnakeGame::~SnakeGame() {
 
 
 /******** PRIVATE METHODS ************/
-
+//compares the time the player sent a "GOT_APPLE" message to previous times where there apple was taken.
+//if this time stamp is less than any time stamp in the list, it will return true
+//if true, the handleClientInput will reward the client and take away from the other client that took the apple when it shouldn't have
+bool SnakeGame::check_previous(unsigned long long time_stamp) {
+	for (auto time = previous_apples.begin(); time != previous_apples.end(); time++) {
+		if (time_stamp < *time)
+			return true;
+	}
+	return false;
+}
 
 /** Sets a new apple position.
  */
